@@ -15,7 +15,8 @@ sudo ./install.sh --deps-only        # 32-bit библиотеки (apt / dnf), 
 /srv/css34/start-server.sh
 ```
 
-Windows (PowerShell):
+Windows (PowerShell; установка проверена в CI, но smoke-тест `srcds.exe` на раннере GitHub
+пока не проходит: сервер останавливается после строки `Network:`):
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File install.ps1 -Dir C:\css34
