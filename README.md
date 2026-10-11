@@ -27,7 +27,7 @@ C:\css34\start-server.bat
 | Шаг | По умолчанию | Варианты |
 |-----|--------------|----------|
 | Файлы сервера | релиз [`v34_srcds_server`](https://github.com/fmu1337/v34_srcds_server/releases/tag/css34-4044), при ошибке — bitbucket rom4s | `--server-source auto\|mirror\|rom4s\|skip` |
-| Патчи | `bufferfix,steamclient,healthfix` (Windows: `healthfix`) | `--patch LIST\|all\|none`, `--valve-rc auto\|stock\|debian9\|minimal` |
+| Патчи | `bufferfix,steamclient,healthfix` (Windows: `healthfix`) | + `steamdeny`, `lanfix`; `--patch LIST\|all\|none`, `--valve-rc auto\|stock\|debian9\|minimal` |
 | Metamod + SourceMod | наш [`sourcemod-css34`](https://github.com/fmu1337/sourcemod-css34), линия `sm13-latest` | `--sm ours\|rom4s\|myarena\|none`, `--sm-line …` |
 | Плагины | SMAC ([`smac_v34`](https://github.com/fmu1337/smac_v34)) | `--plugins smac\|none`, `--smac-mode auto\|compile\|prebuilt` |
 
@@ -40,9 +40,9 @@ C:\css34\start-server.bat
 | `ours` `sm13-latest` | 1.12.0-dev+1226 | 1.13.0.7472 | Linux, Windows |
 | `ours` `sm13-dev` | 1.12.0-dev+1226 | 1.13.0.7404 | Linux, Windows |
 | `ours` `sm12-latest` | 1.12.0-dev+1226 | 1.12.0.7253 | Linux, Windows |
-| `ours` `sm11-oldstable` | 1.10.7-dev | 1.11.0.6970 | Linux, Windows |
+| `ours` `sm11-oldstable` | 1.10.7-dev | 1.11.0.6572 | Linux, Windows |
 | `ours` `sm13-mm20-khook` | 2.0.0-dev (KHook) | 1.13.0.7565 + dhooks | только Linux |
-| `rom4s` | 1.10.6 | 1.11.0.6572 | Linux, Windows |
+| `rom4s` | 1.10.6 (Windows: наш 1.10.7, у rom4s нет Windows-сборки) | 1.11.0.6572 | Linux, Windows |
 | `myarena` | 1.11.0-1130 | 1.11.0.6522 (git6541, fix gamedata 12.10.2020) | только Linux |
 
 MM и SM всегда ставятся парой из одного источника. Для SM 1.12+ установщик докладывает
@@ -67,15 +67,15 @@ Get-Help .\install.ps1 -Detailed
 - `--server-source skip` — доустановить / переустановить SM, патчи и плагины в уже
   существующий сервер;
 - `--cache DIR` — общий кэш загрузок;
-- `GITHUB_TOKEN=…` — если релиз-зеркало приватное.
+- `GITHUB_TOKEN=…` — если репозиторий с зеркалом приватный.
 
 ## Устройство
 
 ```
 install.sh / install.ps1        установщики
 manifest/sources.json           все ссылки (зеркало, rom4s, myarena, наши релизы) + sha256
-patches/patch-srcds-bufferfix.py   bufferfix + steamclient
-patches/healthfix/              HealthLimitFix (smx, sp, gamedata)
+patches/srcds_patch.py          бинарные патчи (bufferfix, steamclient, healthfix, steamdeny, lanfix)
+patches/healthfix/              HealthLimitFix как SM-плагин (для Windows)
 configs/valve-*.rc              варианты valve.rc
 lib/smoke.py                    smoke-тест через RCON
 .github/workflows/test.yml      CI: полная установка + smoke на Linux и Windows

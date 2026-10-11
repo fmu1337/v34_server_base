@@ -113,10 +113,16 @@ def main() -> int:
         "+map", args.map,
     ]
     print("boot:", " ".join(c if c != password else "***" for c in cmd))
-    proc = subprocess.Popen(
-        cmd, cwd=root, env=env, stdin=subprocess.PIPE,
-        stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT,
-    )
+    if windows:
+        # srcds.exe needs a real console: with a pipe on stdin it spins on
+        # "CTextConsoleWin32::GetLine" and never loads the map.
+        proc = subprocess.Popen(cmd, cwd=root, env=env,
+                                creationflags=subprocess.CREATE_NEW_CONSOLE)
+    else:
+        proc = subprocess.Popen(
+            cmd, cwd=root, env=env, stdin=subprocess.PIPE,
+            stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT,
+        )
 
     failures: list[str] = []
     rcon = None
@@ -154,7 +160,8 @@ def main() -> int:
                         if "<Failed>" in line or "<Error>" in line:
                             failures.append(f"plugin failed: {line.strip()}")
                     for name in args.expect_plugin:
-                        if name.lower() not in out.lower():
+                        # `sm plugins list` shows titles ("Health Limit Fix"), not file names
+                        if name.lower().replace(" ", "") not in out.lower().replace(" ", ""):
                             failures.append(f"plugin {name} not listed")
         try:
             rcon.cmd("quit")

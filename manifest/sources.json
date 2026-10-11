@@ -20,8 +20,8 @@
       "release": "https://github.com/fmu1337/sourcemod-css34/releases/download",
       "lines": {
         "sm11-oldstable": {
-          "tag": "1.11.0.6970-mm1.10.7",
-          "sm": "sourcemod-1.11.0-git6970-css34",
+          "tag": "1.11.0.6572-mm1.10.7",
+          "sm": "sourcemod-1.11.0-git6572-css34",
           "mm": "mmsource-1.10.7-dev-css34"
         },
         "sm12-latest": {
@@ -54,7 +54,8 @@
         "sm": "https://github.com/rom4s/sourcemod-css34/releases/download/v1.11.0.6572/sourcemod-1.11.0-git6572-css34-linux.tar.gz"
       },
       "windows": {
-        "mm": "https://bitbucket.org/rom4s/mmsdrop-1.10/downloads/mmsource-1.10.6-css34-windows.zip",
+        "_comment": "rom4s has no Windows Metamod drop; our MM 1.10.7 (same metamod.1.ep1 / PLAPI 11 line) is used",
+        "mm": "https://github.com/fmu1337/sourcemod-css34/releases/download/1.11.0.6572-mm1.10.7/mmsource-1.10.7-dev-css34-windows.zip",
         "sm": "https://github.com/rom4s/sourcemod-css34/releases/download/v1.11.0.6572/sourcemod-1.11.0-git6572-css34-windows.zip"
       }
     },
