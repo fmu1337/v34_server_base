@@ -374,8 +374,11 @@ write_configs() {
     } >"${cfg}"
   fi
 
-  # A missing ban list makes the engine print "file size larger than 20MB".
-  touch "${DIR}/cstrike/cfg/banned_user.cfg" "${DIR}/cstrike/cfg/banned_ip.cfg"
+  # A missing or empty ban list makes the engine print "file size larger than 20MB".
+  local f
+  for f in banned_user.cfg banned_ip.cfg; do
+    [[ -s "${DIR}/cstrike/cfg/${f}" ]] || echo "// ${f}" >"${DIR}/cstrike/cfg/${f}"
+  done
 
   cat >"${DIR}/start-server.sh" <<EOF
 #!/usr/bin/env bash

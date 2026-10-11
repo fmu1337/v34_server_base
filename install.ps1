@@ -133,6 +133,8 @@ if ($ServerSource -eq 'skip') {
     Expand-Any $out $Dir
   }
   if (-not (Test-Path (Join-Path $Dir 'srcds.exe'))) { Die 'server tree looks incomplete (no srcds.exe)' }
+  # srcds_css34_w_a.zip ships its own cstrike/addons; start from a clean addons tree
+  Remove-Item -Recurse -Force (Join-Path $CS 'addons'), (Join-Path $CS 'cfg/sourcemod') -ErrorAction SilentlyContinue
 }
 
 # ---- valve.rc -----------------------------------------------------------------
@@ -250,7 +252,8 @@ if (-not (Test-Path $cfg) -or -not (Test-Path (Join-Path $Dir '.installer'))) {
 
 foreach ($f in 'banned_user.cfg', 'banned_ip.cfg') {
   $path = Join-Path $CS "cfg/$f"
-  if (-not (Test-Path $path)) { New-Item -ItemType File $path | Out-Null }  # missing file -> "larger than 20MB"
+  # a missing or empty ban list -> "file size larger than 20MB"
+  if (-not (Test-Path $path) -or (Get-Item $path).Length -eq 0) { Set-Content -Encoding ASCII $path "// $f" }
 }
 
 Set-Content -Encoding ASCII (Join-Path $Dir 'start-server.bat') @"
@@ -260,7 +263,7 @@ cd /d "%~dp0"
 if "%PORT%"=="" set PORT=$Port
 if "%MAXPLAYERS%"=="" set MAXPLAYERS=32
 if "%MAP%"=="" set MAP=de_dust2
-start "" srcds.exe -console -game cstrike -port %PORT% -tickrate 66 -maxplayers %MAXPLAYERS% -insecure -nomaster -localcser +map %MAP% %*
+start "" srcds.exe -console -game cstrike -port %PORT% -tickrate 66 -maxplayers %MAXPLAYERS% -insecure +map %MAP% %*
 "@
 
 Set-Content -Encoding ASCII (Join-Path $Dir '.installer') @(

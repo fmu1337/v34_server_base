@@ -40,10 +40,12 @@ C:\css34\start-server.bat
 | `ours` `sm13-latest` | 1.12.0-dev+1226 | 1.13.0.7472 | Linux, Windows |
 | `ours` `sm13-dev` | 1.12.0-dev+1226 | 1.13.0.7404 | Linux, Windows |
 | `ours` `sm12-latest` | 1.12.0-dev+1226 | 1.12.0.7253 | Linux, Windows |
-| `ours` `sm11-oldstable` | 1.10.7-dev | 1.11.0.6572 | Linux, Windows |
 | `ours` `sm13-mm20-khook` | 2.0.0-dev (KHook) | 1.13.0.7565 + dhooks | только Linux |
 | `rom4s` | 1.10.6 (Windows: наш 1.10.7, у rom4s нет Windows-сборки) | 1.11.0.6572 | Linux, Windows |
 | `myarena` | 1.11.0-1130 | 1.11.0.6522 (git6541, fix gamedata 12.10.2020) | только Linux |
+
+SM 1.11 — это `rom4s` или `myarena`: у нашего релиза `1.11.0.6970-mm1.10.7` нет файлов, а
+`1.11.0.6572-mm1.10.7` падает (segfault) при загрузке карты.
 
 MM и SM всегда ставятся парой из одного источника. Для SM 1.12+ установщик докладывает
 GeoIP2 `GeoLite2-Country.mmdb` (без неё не грузится `geoip.ext`, а за ним SMAC).

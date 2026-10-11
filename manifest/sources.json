@@ -19,11 +19,6 @@
       "default_line": "sm13-latest",
       "release": "https://github.com/fmu1337/sourcemod-css34/releases/download",
       "lines": {
-        "sm11-oldstable": {
-          "tag": "1.11.0.6572-mm1.10.7",
-          "sm": "sourcemod-1.11.0-git6572-css34",
-          "mm": "mmsource-1.10.7-dev-css34"
-        },
         "sm12-latest": {
           "tag": "1.12.0.7253-mm1.12.0",
           "sm": "sourcemod-1.12.0-git7253-css34",

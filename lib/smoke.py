@@ -105,13 +105,20 @@ def main() -> int:
 
     password = secrets.token_hex(8)
     env = dict(os.environ, LD_LIBRARY_PATH=f".:bin:{os.environ.get('LD_LIBRARY_PATH', '')}")
-    cmd = [
-        str(root / binary) if windows else f"./{binary}", "-game", "cstrike", "-console", "-condebug", "-nohltv",
-        "-nomaster", "-localcser", "-insecure", "-tickrate", "66",
-        "-ip", "127.0.0.1", "-port", str(args.port),
-        "+sv_lan", "1", "+maxplayers", "10", "+rcon_password", password,
-        "+map", args.map,
-    ]
+    if windows:
+        # Same argument set as the native Windows smoke in sourcemod-css34;
+        # -nomaster/-localcser keep srcds.exe stuck right after "Network:".
+        cmd = [str(root / binary), "-console", "-condebug", "-game", "cstrike",
+               "-insecure", "-nohltv", "-port", str(args.port), "+maxplayers", "10",
+               "+rcon_password", password, "+ip", "127.0.0.1", "+map", args.map]
+    else:
+        cmd = [
+            f"./{binary}", "-game", "cstrike", "-console", "-condebug", "-nohltv",
+            "-nomaster", "-localcser", "-insecure", "-tickrate", "66",
+            "-ip", "127.0.0.1", "-port", str(args.port),
+            "+sv_lan", "1", "+maxplayers", "10", "+rcon_password", password,
+            "+map", args.map,
+        ]
     print("boot:", " ".join(c if c != password else "***" for c in cmd))
     if windows:
         # srcds.exe needs a real console: with a pipe on stdin it spins on
