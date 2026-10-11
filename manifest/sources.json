@@ -1,0 +1,76 @@
+{
+  "_comment": "Download sources for install.sh / install.ps1. Each file lists URLs in order: our mirror first, then the rom4s fallback. sha256 is checked when set.",
+  "server": {
+    "mirror_release": "https://github.com/fmu1337/v34_srcds_server/releases/download/css34-4044",
+    "rom4s": "https://bitbucket.org/rom4s/other.get/downloads",
+    "linux": [
+      { "name": "srcds_css34_4044.zip", "sha256": null },
+      { "name": "srcds_css34_l_a.zip", "sha256": null },
+      { "name": "srcds_css34_l_eSTEAMATiON.zip", "sha256": null }
+    ],
+    "windows": [
+      { "name": "srcds_css34_4044.zip", "sha256": null },
+      { "name": "srcds_css34_w_a.zip", "sha256": null }
+    ]
+  },
+  "sourcemod": {
+    "default": "ours",
+    "ours": {
+      "default_line": "sm13-latest",
+      "release": "https://github.com/fmu1337/sourcemod-css34/releases/download",
+      "lines": {
+        "sm11-oldstable": {
+          "tag": "1.11.0.6970-mm1.10.7",
+          "sm": "sourcemod-1.11.0-git6970-css34",
+          "mm": "mmsource-1.10.7-dev-css34"
+        },
+        "sm12-latest": {
+          "tag": "1.12.0.7253-mm1.12.0",
+          "sm": "sourcemod-1.12.0-git7253-css34",
+          "mm": "mmsource-1.12.0-dev-css34"
+        },
+        "sm13-dev": {
+          "tag": "1.13.0.7404-mm1.12.0",
+          "sm": "sourcemod-1.13.0-git7404-css34",
+          "mm": "mmsource-1.12.0-dev-css34"
+        },
+        "sm13-latest": {
+          "tag": "1.13.0.7472-mm1.12.0",
+          "sm": "sourcemod-1.13.0-git7472-css34",
+          "mm": "mmsource-1.12.0-dev-css34"
+        },
+        "sm13-mm20-khook": {
+          "tag": "1.13.0.7565-mm2.0.0-khook-dhooks",
+          "sm": "sourcemod-1.13.0-git7565-css34",
+          "mm": "mmsource-2.0.0-dev-css34",
+          "linux_only": true
+        }
+      }
+    },
+    "rom4s": {
+      "_comment": "rom4s drop: Metamod 1.10.6 + SourceMod 1.11.0.6572",
+      "linux": {
+        "mm": "https://bitbucket.org/rom4s/mmsdrop-1.10/downloads/mmsource-1.10.6-css34-linux.tar.gz",
+        "sm": "https://github.com/rom4s/sourcemod-css34/releases/download/v1.11.0.6572/sourcemod-1.11.0-git6572-css34-linux.tar.gz"
+      },
+      "windows": {
+        "mm": "https://bitbucket.org/rom4s/mmsdrop-1.10/downloads/mmsource-1.10.6-css34-windows.zip",
+        "sm": "https://github.com/rom4s/sourcemod-css34/releases/download/v1.11.0.6572/sourcemod-1.11.0-git6572-css34-windows.zip"
+      }
+    },
+    "myarena": {
+      "_comment": "myarena bundle: Metamod 1.11.0-1130 + SourceMod 1.11.0.6522 (git6541 update, gamedata fix 12.10.2020); Linux only",
+      "linux": {
+        "bundle": "https://bitbucket.org/fmu1337/danyas_dl/downloads/mms-1.11.0-1130_sourcemod-1.11.0-6522-css_v34-linux-up-git6541-10.05.2020-fix-gamedata-12.10.2020_1.zip"
+      }
+    }
+  },
+  "geoip2": "https://github.com/P3TERX/GeoLite.mmdb/raw/download/GeoLite2-Country.mmdb",
+  "plugins": {
+    "smac": {
+      "archive": "https://codeload.github.com/fmu1337/smac_v34/tar.gz/refs/heads/master",
+      "zip": "https://codeload.github.com/fmu1337/smac_v34/zip/refs/heads/master",
+      "dir": "smac_v34-master"
+    }
+  }
+}

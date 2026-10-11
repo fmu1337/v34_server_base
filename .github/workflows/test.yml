@@ -1,0 +1,78 @@
+name: test
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  linux:
+    name: linux / ${{ matrix.name }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { name: ours sm13-latest, args: "--sm ours --sm-line sm13-latest" }
+          - { name: ours sm12-latest, args: "--sm ours --sm-line sm12-latest" }
+          - { name: ours sm11-oldstable, args: "--sm ours --sm-line sm11-oldstable" }
+          - { name: rom4s, args: "--sm rom4s" }
+          - { name: myarena, args: "--sm myarena" }
+    steps:
+      - uses: actions/checkout@v4
+      - name: Cache downloads
+        uses: actions/cache@v4
+        with:
+          path: .dl
+          key: dl-linux-${{ hashFiles('manifest/sources.json') }}
+          restore-keys: dl-linux-
+      - name: Dependencies
+        run: sudo ./install.sh --deps-only
+      - name: Install + smoke
+        run: ./install.sh -y --dir "$RUNNER_TEMP/css34" --cache "$PWD/.dl" ${{ matrix.args }} --smoke
+      - name: Re-run on the same tree (idempotent patches)
+        run: ./install.sh -y --dir "$RUNNER_TEMP/css34" --cache "$PWD/.dl" --server-source skip ${{ matrix.args }}
+      - name: Logs
+        if: failure()
+        run: |
+          tail -n 80 "$RUNNER_TEMP"/css34/cstrike/console.log || true
+          tail -n 40 "$RUNNER_TEMP"/css34/cstrike/addons/sourcemod/logs/*.log || true
+          cat "$RUNNER_TEMP"/css34/.cache/smac-compile.log .dl/smac-compile.log 2>/dev/null | tail -n 40 || true
+
+  windows:
+    name: windows / ${{ matrix.name }}
+    runs-on: windows-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { name: ours sm13-latest, sm: ours, line: sm13-latest }
+          - { name: rom4s, sm: rom4s, line: "" }
+    steps:
+      - uses: actions/checkout@v4
+      - name: Cache downloads
+        uses: actions/cache@v4
+        with:
+          path: .dl
+          key: dl-windows-${{ hashFiles('manifest/sources.json') }}
+          restore-keys: dl-windows-
+      - name: Install + smoke (Windows PowerShell 5.1)
+        shell: powershell
+        run: |
+          $line = '${{ matrix.line }}'
+          $extra = @{}
+          if ($line) { $extra.SMLine = $line }
+          .\install.ps1 -Dir "$env:RUNNER_TEMP\css34" -Cache "$PWD\.dl" -SM ${{ matrix.sm }} @extra -Smoke
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+      - name: Logs
+        if: failure()
+        shell: bash
+        run: |
+          tail -n 80 "$RUNNER_TEMP"/css34/cstrike/console.log || true
+          tail -n 40 "$RUNNER_TEMP"/css34/cstrike/addons/sourcemod/logs/*.log || true

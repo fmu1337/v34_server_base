@@ -1,0 +1,3 @@
+// Minimal valve.rc: no stuffcmds (avoids the buffer bug without bufferfix).
+r_decal_cullsize 1
+exec autoexec.cfg
