@@ -1,0 +1,4 @@
+// ProtectCMDS: client commands that are always blocked (one per line).
+// [args]      also block the command with arguments ("cmd ...")
+// [sensitive] case-sensitive match
+// ~60 css34 debug/exploit commands are already blocked inside the extension.

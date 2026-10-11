@@ -1,0 +1,64 @@
+name: protectcmds
+
+# Builds protectcmds.ext.so (WeSTManCoder/ProtectCMDS, css34) on debian:11 and
+# publishes it as the release `protectcmds-<commit>` that install.sh downloads.
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - extras/protectcmds/build.sh
+      - .github/workflows/protectcmds.yml
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    container: debian:11
+    steps:
+      - name: Tools
+        run: |
+          # bullseye may already live on archive.debian.org
+          if ! apt-get update -qq; then
+            echo 'deb http://archive.debian.org/debian bullseye main' >/etc/apt/sources.list
+            echo 'deb http://archive.debian.org/debian-security bullseye-security main' >>/etc/apt/sources.list
+            rm -f /etc/apt/sources.list.d/*
+            apt-get -o Acquire::Check-Valid-Until=false update -qq
+          fi
+          apt-get install -y -qq git ca-certificates >/dev/null
+      - uses: actions/checkout@v4
+      - name: Build
+        run: extras/protectcmds/build.sh out
+      - name: Check
+        run: |
+          apt-get install -y -qq binutils >/dev/null
+          readelf -d out/protectcmds.ext.so | grep NEEDED
+          objdump -T out/protectcmds.ext.so | grep -oE 'GLIBC(XX)?_[0-9.]+' | sort -Vu | tail -n 3
+      - uses: actions/upload-artifact@v4
+        with:
+          name: protectcmds
+          path: out/
+          retention-days: 3
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: protectcmds
+          path: out
+      - name: Publish
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          commit="$(cat out/protectcmds.commit)"
+          tag="protectcmds-${commit:0:7}"
+          if ! gh release view "$tag" >/dev/null 2>&1; then
+            gh release create "$tag" --target "$GITHUB_SHA" --title "ProtectCMDS ${commit:0:7} (css34, linux)" \
+              --notes "protectcmds.ext.so built from WeSTManCoder/ProtectCMDS@${commit} (ENGINE=css34) on debian:11. Used by install.sh --plugins protectcmds."
+          fi
+          gh release upload "$tag" out/protectcmds.ext.so --clobber
