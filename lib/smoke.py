@@ -110,7 +110,7 @@ def main() -> int:
         # -nomaster/-localcser keep srcds.exe stuck right after "Network:".
         cmd = [str(root / binary), "-console", "-condebug", "-game", "cstrike",
                "-insecure", "-nohltv", "-ip", "127.0.0.1", "-port", str(args.port),
-               "+maxplayers", "10", "+rcon_password", password, "+ip", "127.0.0.1",
+               "+sv_lan", "1", "+maxplayers", "10", "+rcon_password", password, "+ip", "127.0.0.1",
                "+map", args.map]
     else:
         cmd = [
