@@ -109,8 +109,9 @@ def main() -> int:
         # Same argument set as the native Windows smoke in sourcemod-css34;
         # -nomaster/-localcser keep srcds.exe stuck right after "Network:".
         cmd = [str(root / binary), "-console", "-condebug", "-game", "cstrike",
-               "-insecure", "-nohltv", "-port", str(args.port), "+maxplayers", "10",
-               "+rcon_password", password, "+ip", "127.0.0.1", "+map", args.map]
+               "-insecure", "-nohltv", "-ip", "127.0.0.1", "-port", str(args.port),
+               "+maxplayers", "10", "+rcon_password", password, "+ip", "127.0.0.1",
+               "+map", args.map]
     else:
         cmd = [
             f"./{binary}", "-game", "cstrike", "-console", "-condebug", "-nohltv",
@@ -188,6 +189,9 @@ def main() -> int:
         failures.append("segfault")
 
     if failures:
+        if windows:
+            subprocess.run(["netstat", "-ano", "-p", "TCP"], check=False)
+            subprocess.run(["tasklist", "/FI", "IMAGENAME eq srcds.exe"], check=False)
         print("==== console.log (tail) ====")
         print(tail(console))
         for f in failures:
