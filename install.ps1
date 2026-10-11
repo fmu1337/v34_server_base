@@ -20,7 +20,7 @@ param(
   [string]$SMLine = '',
   [string]$Patch = 'healthfix',
   [ValidateSet('auto', 'stock', 'debian9', 'minimal')][string]$ValveRc = 'auto',
-  [string]$Plugins = 'smac',
+  [string]$Plugins = 'smac',  # protectcmds is Linux-only
   [ValidateSet('auto', 'compile', 'prebuilt')][string]$SmacMode = 'auto',
   [int]$Port = 27015,
   [string]$Hostname = 'CS:S v34 server',
@@ -101,7 +101,10 @@ foreach ($p in $PatchList) {
   if ($p -in 'bufferfix', 'steamclient', 'steamdeny', 'lanfix') { Warn "$p is a Linux-only patch; skipped on Windows" }
   elseif ($p -ne 'healthfix') { Die "unknown patch: $p" }
 }
-foreach ($p in $PluginList) { if ($p -ne 'smac') { Die "unknown plugin: $p" } }
+foreach ($p in $PluginList) {
+  if ($p -eq 'protectcmds') { Warn 'ProtectCMDS has no Windows build; skipped' }
+  elseif ($p -ne 'smac') { Die "unknown plugin: $p" }
+}
 
 New-Item -ItemType Directory -Force $Dir | Out-Null
 $Dir = (Resolve-Path $Dir).Path

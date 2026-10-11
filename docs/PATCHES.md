@@ -68,11 +68,10 @@
 `srcds_patch.py --only steamdeny,lanfix` на стоковых engine даёт байт в байт файлы из
 архива, кроме переименования команд.
 
-Переименование не нужно: `RegConsoleCmd("status")` в SourceMod и так перехватывает
-команду раньше движка. Это уже делает `smac_status` из SMAC (антиспам, показ только
-себя/админам). Плюс переименование ломает `status` для rcon-утилит, HLSW и мониторинга,
-если плагин не загрузился. Сам `status_protect.smx` собран под SM 1.4 — его заменяет
-`smac_status`.
+Переименование команд не переносил: `status`/`ping` от клиента закрывает ProtectCMDS
+(ниже), без правки бинарей и без поломки `status` для rcon/HLSW. `RegConsoleCmd("status")`
+в SourceMod клиентскую команду не ловит: движок выполняет `status`/`ping` сам, в
+`ClientCommand` игры они не доходят.
 
 `steamdeny` и `lanfix` выключены по умолчанию: с эмулятором eSTEAMATiON из сборки
 сервера Steam-отказы обычно не приходят, а `lanfix` нужен только серверам с `sv_lan 1`.
@@ -82,3 +81,31 @@
 - `debian9` — `stuffcmds` без `exec default.cfg` (по умолчанию вместе с `bufferfix`);
 - `minimal` — без `stuffcmds` (обходит баг буфера, если `bufferfix` не применён);
 - `stock` — не трогать.
+
+## ProtectCMDS (WeSTManCoder) — `--plugins protectcmds`
+
+SM-расширение `protectcmds.ext.so` (только Linux). Главное для нас — детур
+`CGameClient::ExecuteStringCommand`: через него проходит **каждая** команда клиента,
+в том числе движковые `status`/`ping`, до того как движок их выполнит. Там:
+
+- кик за флуд командами (больше `blockcmds_maxcommands` = 30 в секунду);
+- ~60 встроенных запрещённых команд css34 (`changelevel`, `dump_*`, `npc_*`, …) и свой
+  список в `data/protectcmds/blockcmds.txt`;
+- forward `ProtectCMDS_OnClientCommand(client, command)`.
+
+Плагин `protectcmds_status.smx` (исходник `extras/protectcmds/protectcmds_status.sp`) через
+этот forward отправляет клиентские `status`/`ping` в `sm_status`/`sm_ping` из
+`smac_status` (антиспам, показ только себя/админам), а движковые версии не выполняются.
+Без SMAC обе команды для игроков просто закрыты. Из консоли сервера и по rcon `status`
+работает как обычно.
+
+Остальное, что включено в `protectcmds.ini`: фильтр пакетов (FilterPacket), GamePacketFix,
+хеширование SteamID, GameStats, VACPatch и набор встроенных фиксов (имена, spec_goto,
+observer loop, SourceTV, урон и т.п.). `OSFix` (тот же memcpy → memmove, но в рантайме)
+установщик выключает, если применён `bufferfix`. Встроенный апдейтер выключен: он качает
+бинарь со стороннего сайта.
+
+Бинарь собирает `.github/workflows/protectcmds.yml` из
+`WeSTManCoder/ProtectCMDS@bbdc766` (`ENGINE=css34`, SM 1.6 SDK, MM 1.10, hl2sdk-episode1)
+в `debian:11` — так он грузится на старых glibc — и кладёт в релиз
+`protectcmds-bbdc766` этого репозитория. Скрипт сборки: `extras/protectcmds/build.sh`.

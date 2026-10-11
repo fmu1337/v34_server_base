@@ -18,7 +18,7 @@ SM_SOURCE=""             # ours | rom4s | myarena | none   (empty = manifest def
 SM_LINE=""               # ours only (empty = manifest default)
 PATCHES="bufferfix,steamclient,healthfix"
 VALVE_RC="auto"          # auto | stock | debian9 | minimal
-PLUGINS="smac"
+PLUGINS="smac,protectcmds"
 SMAC_MODE="auto"         # auto | compile | prebuilt
 INSTALL_DEPS=0
 SMOKE=0
@@ -29,7 +29,7 @@ RCON_PASSWORD=""
 FORCE=0
 
 ALL_PATCHES="bufferfix steamclient healthfix steamdeny lanfix"
-ALL_PLUGINS="smac"
+ALL_PLUGINS="smac protectcmds"
 
 usage() {
   cat <<EOF
@@ -64,7 +64,10 @@ SourceMod + Metamod:
                         (default: $(manifest_get sourcemod.ours.default_line))
 
 Plugins:
-  --plugins LIST        smac | none (default: smac)
+  --plugins LIST        smac,protectcmds | all | none (default: smac,protectcmds)
+                        protectcmds: WeSTManCoder's ProtectCMDS extension
+                        (client command flood/exploit filter; sends client
+                        status/ping to SMAC's protected versions)
   --smac-mode MODE      auto (compile, fall back to prebuilt) | compile | prebuilt
 
 Other:
@@ -353,6 +356,31 @@ install_smac() {
   echo "    $(ls "${sm}/plugins"/smac*.smx | wc -l) SMAC plugins (compiled=${compiled})"
 }
 
+install_protectcmds() {
+  local sm="${DIR}/cstrike/addons/sourcemod" src="${ROOT}/extras/protectcmds"
+  [[ -d "${sm}" ]] || { warn "ProtectCMDS needs SourceMod; skipped"; return 0; }
+  log "ProtectCMDS"
+  local url
+  url="$(manifest_get plugins.protectcmds.ext)"
+  fetch "${CACHE_DIR}/protectcmds.ext.so" - "${url}" || die "could not download ProtectCMDS"
+  install -m 755 "${CACHE_DIR}/protectcmds.ext.so" "${sm}/extensions/protectcmds.ext.so"
+  : >"${sm}/extensions/protectcmds.autoload"   # nothing #includes it, load it anyway
+  mkdir -p "${sm}/data/protectcmds"
+  # keep a config the admin already edited
+  [[ -f "${sm}/data/protectcmds/protectcmds.ini" ]] || cp "${src}/protectcmds.ini" "${sm}/data/protectcmds/"
+  [[ -f "${sm}/data/protectcmds/blockcmds.txt" ]] || cp "${src}/blockcmds.txt" "${sm}/data/protectcmds/"
+  if has_item "${PATCHES}" bufferfix; then
+    # same memcpy fix is already in the binaries
+    sed -i 's/^osfix_enable *= *1/osfix_enable = 0/' "${sm}/data/protectcmds/protectcmds.ini"
+  fi
+  if "${sm}/scripting/spcomp" "${src}/protectcmds_status.sp" -o"${sm}/plugins/protectcmds_status.smx" \
+       -i"${sm}/scripting/include" >"${CACHE_DIR}/protectcmds-compile.log" 2>&1; then
+    echo "    status/ping -> sm_status/sm_ping (protectcmds_status.smx)"
+  else
+    warn "protectcmds_status.sp did not compile (log: ${CACHE_DIR}/protectcmds-compile.log)"
+  fi
+}
+
 write_configs() {
   local cfg="${DIR}/cstrike/cfg/server.cfg"
   mkdir -p "${DIR}/cstrike/cfg"
@@ -409,7 +437,8 @@ smoke() {
   log "Smoke test"
   python3 -I "${ROOT}/lib/smoke.py" "${DIR}" \
     --sm "${SM_SOURCE}" \
-    $(has_item "${PLUGINS}" smac && echo --expect-plugin smac)
+    $(has_item "${PLUGINS}" smac && echo --expect-plugin smac) \
+    $(has_item "${PLUGINS}" protectcmds && echo --expect-ext ProtectCMDS --expect-plugin ProtectCMDS:status/ping)
 }
 
 interactive() {
@@ -425,7 +454,7 @@ interactive() {
   fi
   PATCHES="$(ask "Patches (bufferfix,steamclient,healthfix,steamdeny,lanfix | all | none)" "${PATCHES}")"
   VALVE_RC="$(ask "valve.rc: auto | stock | debian9 | minimal" "${VALVE_RC}")"
-  PLUGINS="$(ask "Plugins (smac | none)" "${PLUGINS}")"
+  PLUGINS="$(ask "Plugins (smac,protectcmds | none)" "${PLUGINS}")"
   [[ "$(ask "Run smoke test after install? (y/n)" n)" == y ]] && SMOKE=1
   return 0
 }
@@ -493,6 +522,7 @@ apply_binary_patches
 install_valve_rc
 install_sourcemod
 has_item "${PLUGINS}" smac && install_smac
+has_item "${PLUGINS}" protectcmds && install_protectcmds
 write_configs
 write_state
 

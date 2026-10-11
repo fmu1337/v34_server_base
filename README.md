@@ -15,8 +15,7 @@ sudo ./install.sh --deps-only        # 32-bit библиотеки (apt / dnf), 
 /srv/css34/start-server.sh
 ```
 
-Windows (PowerShell; установка проверена в CI, но smoke-тест `srcds.exe` на раннере GitHub
-пока не проходит: сервер останавливается после строки `Network:`):
+Windows (PowerShell):
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File install.ps1 -Dir C:\css34
@@ -30,7 +29,7 @@ C:\css34\start-server.bat
 | Файлы сервера | релиз [`v34_srcds_server`](https://github.com/fmu1337/v34_srcds_server/releases/tag/css34-4044), при ошибке — bitbucket rom4s | `--server-source auto\|mirror\|rom4s\|skip` |
 | Патчи | `bufferfix,steamclient,healthfix` (Windows: `healthfix`) | + `steamdeny`, `lanfix`; `--patch LIST\|all\|none`, `--valve-rc auto\|stock\|debian9\|minimal` |
 | Metamod + SourceMod | наш [`sourcemod-css34`](https://github.com/fmu1337/sourcemod-css34), линия `sm13-latest` | `--sm ours\|rom4s\|myarena\|none`, `--sm-line …` |
-| Плагины | SMAC ([`smac_v34`](https://github.com/fmu1337/smac_v34)) | `--plugins smac\|none`, `--smac-mode auto\|compile\|prebuilt` |
+| Плагины | SMAC ([`smac_v34`](https://github.com/fmu1337/smac_v34)) + ProtectCMDS ([WeSTManCoder](https://github.com/WeSTManCoder/ProtectCMDS), только Linux) | `--plugins smac,protectcmds\|none`, `--smac-mode auto\|compile\|prebuilt` |
 
 Описание патчей — [docs/PATCHES.md](docs/PATCHES.md).
 
@@ -80,6 +79,7 @@ manifest/sources.json           все ссылки (зеркало, rom4s, myar
 patches/srcds_patch.py          бинарные патчи (bufferfix, steamclient, healthfix, steamdeny, lanfix)
 patches/healthfix/              HealthLimitFix как SM-плагин (для Windows)
 configs/valve-*.rc              варианты valve.rc
+extras/protectcmds/              сборка ProtectCMDS, его конфиг и плагин status/ping
 lib/smoke.py                    smoke-тест через RCON
 .github/workflows/test.yml      CI: полная установка + smoke на Linux и Windows
 ```

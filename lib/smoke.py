@@ -88,6 +88,7 @@ def main() -> int:
     ap.add_argument("server_dir", type=Path)
     ap.add_argument("--sm", default="ours")
     ap.add_argument("--expect-plugin", action="append", default=[])
+    ap.add_argument("--expect-ext", action="append", default=[])
     ap.add_argument("--port", type=int, default=27115)
     ap.add_argument("--boot-secs", type=int, default=120)
     ap.add_argument("--map", default="de_dust2")
@@ -161,8 +162,12 @@ def main() -> int:
                     failures.append("Metamod not loaded")
                 if c == "sm version" and "SourceMod" not in out:
                     failures.append("SourceMod not loaded")
-                if c == "sm exts list" and "<FAILED>" in out:
-                    failures.append("an extension failed to load")
+                if c == "sm exts list":
+                    if "<FAILED>" in out:
+                        failures.append("an extension failed to load")
+                    for name in args.expect_ext:
+                        if name.lower() not in out.lower():
+                            failures.append(f"extension {name} not loaded")
                 if c == "sm plugins list":
                     for line in out.splitlines():
                         if "<Failed>" in line or "<Error>" in line:

@@ -10,7 +10,8 @@
     ],
     "windows": [
       { "name": "srcds_css34_4044.zip", "sha256": null },
-      { "name": "srcds_css34_w_a.zip", "sha256": null }
+      { "name": "srcds_css34_w_a.zip", "sha256": null },
+      { "name": "srcds_css34_w_eSTEAMATiON.RC9.U1.zip", "sha256": null }
     ]
   },
   "sourcemod": {
@@ -63,6 +64,10 @@
   },
   "geoip2": "https://github.com/P3TERX/GeoLite.mmdb/raw/download/GeoLite2-Country.mmdb",
   "plugins": {
+    "protectcmds": {
+      "_comment": "WeSTManCoder/ProtectCMDS built by .github/workflows/protectcmds.yml; Linux only",
+      "ext": "https://github.com/fmu1337/v34_server_base/releases/download/protectcmds-bbdc766/protectcmds.ext.so"
+    },
     "smac": {
       "archive": "https://codeload.github.com/fmu1337/smac_v34/tar.gz/refs/heads/master",
       "zip": "https://codeload.github.com/fmu1337/smac_v34/zip/refs/heads/master",
