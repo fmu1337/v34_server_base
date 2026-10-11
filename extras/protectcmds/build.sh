@@ -9,7 +9,7 @@ REPO="${PROTECTCMDS_REPO:-https://github.com/WeSTManCoder/ProtectCMDS}"
 COMMIT="${PROTECTCMDS_COMMIT:-bbdc76641ec905858657a50ba78894a41e6c25d3}"
 WORK="$(mktemp -d)"
 
-if command -v apt-get >/dev/null 2>&1 && [[ "$(id -u)" == 0 ]]; then
+if ! command -v make >/dev/null 2>&1 && command -v apt-get >/dev/null 2>&1 && [[ "$(id -u)" == 0 ]]; then
   apt-get update -qq || apt-get -o Acquire::Check-Valid-Until=false update -qq
   apt-get install -y -qq git make gcc g++ gcc-multilib g++-multilib ca-certificates >/dev/null
 fi
