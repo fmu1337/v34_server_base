@@ -66,7 +66,8 @@
   "plugins": {
     "protectcmds": {
       "_comment": "fmu1337/ProtectCMDS (fork of WeSTManCoder) built by .github/workflows/protectcmds.yml; Linux only",
-      "ext": "https://github.com/fmu1337/v34_server_base/releases/download/protectcmds-bbdc766/protectcmds.ext.so"
+      "ext_api7": "https://github.com/fmu1337/v34_server_base/releases/download/protectcmds-bbdc766/protectcmds-api7.ext.so",
+      "ext_api9": "https://github.com/fmu1337/v34_server_base/releases/download/protectcmds-bbdc766/protectcmds-api9.ext.so"
     },
     "smac": {
       "archive": "https://codeload.github.com/fmu1337/smac_v34/tar.gz/refs/heads/master",

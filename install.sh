@@ -357,10 +357,15 @@ install_protectcmds() {
   local sm="${DIR}/cstrike/addons/sourcemod" src="${ROOT}/extras/protectcmds"
   [[ -d "${sm}" ]] || { warn "ProtectCMDS needs SourceMod; skipped"; return 0; }
   log "ProtectCMDS"
-  local url
-  url="$(manifest_get plugins.protectcmds.ext)"
-  fetch "${CACHE_DIR}/protectcmds.ext.so" - "${url}" || die "could not download ProtectCMDS"
-  install -m 755 "${CACHE_DIR}/protectcmds.ext.so" "${sm}/extensions/protectcmds.ext.so"
+  # SourceMod 1.13 only loads extension API >= 9, 1.11/1.12 only <= 8.
+  local api=api7 url
+  if grep -aqE '1\.1[3-9]\.0\.[0-9]' "${sm}/bin/sourcemod.logic.so" 2>/dev/null; then
+    api=api9
+  fi
+  url="$(manifest_get "plugins.protectcmds.ext_${api}")"
+  fetch "${CACHE_DIR}/protectcmds-${api}.ext.so" - "${url}" || die "could not download ProtectCMDS"
+  install -m 755 "${CACHE_DIR}/protectcmds-${api}.ext.so" "${sm}/extensions/protectcmds.ext.so"
+  echo "    protectcmds-${api}.ext.so"
   : >"${sm}/extensions/protectcmds.autoload"   # nothing #includes it, load it anyway
   mkdir -p "${sm}/data/protectcmds"
   # keep a config the admin already edited
