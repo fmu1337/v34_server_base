@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
-# Build protectcmds.ext.so (WeSTManCoder/ProtectCMDS, css34) for SourceMod.
+# Build protectcmds.ext.so (fmu1337/ProtectCMDS, fork of WeSTManCoder/ProtectCMDS; css34) for SourceMod.
 # Run inside debian:11 (old glibc, so the result loads on Debian 11+/Ubuntu 20.04+):
 #   docker run --rm -v "$PWD:/w" -w /w debian:11 extras/protectcmds/build.sh OUT_DIR
 set -euo pipefail
 
 OUT="$(mkdir -p "${1:-out}" && cd "${1:-out}" && pwd)"
-REPO="${PROTECTCMDS_REPO:-https://github.com/WeSTManCoder/ProtectCMDS}"
+REPO="${PROTECTCMDS_REPO:-https://github.com/fmu1337/ProtectCMDS}"
 COMMIT="${PROTECTCMDS_COMMIT:-bbdc76641ec905858657a50ba78894a41e6c25d3}"
 WORK="$(mktemp -d)"
 

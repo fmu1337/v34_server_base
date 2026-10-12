@@ -59,7 +59,7 @@ Windows пока отложен — см. [TODO.md](TODO.md).
 - `minimal` — без `stuffcmds` (обходит баг буфера, если `bufferfix` не применён);
 - `stock` — не трогать.
 
-## ProtectCMDS (WeSTManCoder) — `--plugins protectcmds`
+## ProtectCMDS — `--plugins protectcmds`
 
 SM-расширение `protectcmds.ext.so` (только Linux). Главное для нас — детур
 `CGameClient::ExecuteStringCommand`: через него проходит **каждая** команда клиента,
@@ -82,7 +82,12 @@ observer loop, SourceTV, урон и т.п.). `OSFix` (тот же memcpy → me
 установщик выключает, если применён `bufferfix`. Встроенный апдейтер выключен: он качает
 бинарь со стороннего сайта.
 
+Что ProtectCMDS **не** делает: детур `CBaseServer::ConnectClient` у него только для forward
+`ProtectCMDS_OnClientPreConnect` (плагины могут отклонить игрока), проверку «LAN servers are
+restricted» он не убирает; `CSteam3::OnGSClientDenyHelper` не трогает. Поэтому `steamdeny` и
+`lanfix` остаются отдельными бинарными патчами, а от status/ping protect больше ничего не нужно.
+
 Бинарь собирает `.github/workflows/protectcmds.yml` из
-`WeSTManCoder/ProtectCMDS@bbdc766` (`ENGINE=css34`, SM 1.6 SDK, MM 1.10, hl2sdk-episode1)
+`fmu1337/ProtectCMDS@bbdc766` (форк WeSTManCoder/ProtectCMDS, сейчас без отличий) (`ENGINE=css34`, SM 1.6 SDK, MM 1.10, hl2sdk-episode1)
 в `debian:11` — так он грузится на старых glibc — и кладёт в релиз
 `protectcmds-bbdc766` этого репозитория. Скрипт сборки: `extras/protectcmds/build.sh`.

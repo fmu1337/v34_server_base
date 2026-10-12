@@ -62,7 +62,7 @@ SourceMod + Metamod:
 
 Plugins:
   --plugins LIST        smac,protectcmds | all | none (default: smac,protectcmds)
-                        protectcmds: WeSTManCoder's ProtectCMDS extension
+                        protectcmds: ProtectCMDS extension (fmu1337 fork of WeSTManCoder's)
                         (client command flood/exploit filter; sends client
                         status/ping to SMAC's protected versions)
   --smac-mode MODE      auto (compile, fall back to prebuilt) | compile | prebuilt

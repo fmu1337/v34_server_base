@@ -65,7 +65,7 @@
   "geoip2": "https://github.com/P3TERX/GeoLite.mmdb/raw/download/GeoLite2-Country.mmdb",
   "plugins": {
     "protectcmds": {
-      "_comment": "WeSTManCoder/ProtectCMDS built by .github/workflows/protectcmds.yml; Linux only",
+      "_comment": "fmu1337/ProtectCMDS (fork of WeSTManCoder) built by .github/workflows/protectcmds.yml; Linux only",
       "ext": "https://github.com/fmu1337/v34_server_base/releases/download/protectcmds-bbdc766/protectcmds.ext.so"
     },
     "smac": {
