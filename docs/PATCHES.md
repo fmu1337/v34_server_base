@@ -14,8 +14,7 @@
 | `lanfix` | нет | `engine_*.so` | пускать интернет-клиентов при `sv_lan 1` (оттуда же) |
 | `--valve-rc` | `auto` | `cstrike/cfg/valve.rc` | замена файла (`configs/`) |
 
-На Windows бинарных патчей нет: `bufferfix` там не нужен (это проблема glibc), а
-`healthfix` ставится SourceMod-плагином HealthLimitFix.
+Windows пока отложен — см. [TODO.md](TODO.md).
 
 ## bufferfix (зависания)
 
@@ -52,7 +51,7 @@
 
 Почему не плагин: на SourceMod 1.12+ он не загружается (`Read health-patch Config Fail`)
 и ему нужен SM. На SM 1.11 (rom4s, myarena) плагин работает, файлы лежат в
-`patches/healthfix/`, на Windows ставятся они.
+`todo/windows/healthfix/` (для будущего Windows-установщика).
 
 ## steamdeny и lanfix (из status/ping protect, GoDtm666, myarena 2012)
 

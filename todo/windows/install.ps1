@@ -34,6 +34,8 @@ $ProgressPreference = 'SilentlyContinue'   # Invoke-WebRequest is very slow with
 [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
 
 $Root = $PSScriptRoot
+# Parked in todo/windows (see docs/TODO.md); paths point to the repo root.
+$Root = Resolve-Path (Join-Path $PSScriptRoot '..\..')
 $Manifest = Get-Content (Join-Path $Root 'manifest/sources.json') -Raw | ConvertFrom-Json
 
 function Log($m) { Write-Host "==> $m" -ForegroundColor Green }
@@ -193,10 +195,10 @@ if ($SM -ne 'none') {
 if ('healthfix' -in $PatchList) {
   if (Test-Path $SMDir) {
     Log 'HealthLimitFix'
-    Copy-Item -Force (Join-Path $Root 'patches/healthfix/plugins/HealthLimitFix.smx') (Join-Path $SMDir 'plugins')
-    Copy-Item -Force (Join-Path $Root 'patches/healthfix/gamedata/health-patch.txt') (Join-Path $SMDir 'gamedata')
+    Copy-Item -Force (Join-Path $Root 'todo/windows/healthfix/plugins/HealthLimitFix.smx') (Join-Path $SMDir 'plugins')
+    Copy-Item -Force (Join-Path $Root 'todo/windows/healthfix/gamedata/health-patch.txt') (Join-Path $SMDir 'gamedata')
     New-Item -ItemType Directory -Force (Join-Path $SMDir 'scripting') | Out-Null
-    Copy-Item -Force (Join-Path $Root 'patches/healthfix/scripting/HealthLimitFix.sp') (Join-Path $SMDir 'scripting')
+    Copy-Item -Force (Join-Path $Root 'todo/windows/healthfix/scripting/HealthLimitFix.sp') (Join-Path $SMDir 'scripting')
   } else { Warn 'healthfix needs SourceMod; skipped' }
 }
 

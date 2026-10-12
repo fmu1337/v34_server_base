@@ -44,38 +44,3 @@ jobs:
           tail -n 40 "$RUNNER_TEMP"/css34/cstrike/addons/sourcemod/logs/*.log || true
           cat "$RUNNER_TEMP"/css34/.cache/smac-compile.log .dl/smac-compile.log 2>/dev/null | tail -n 40 || true
 
-  windows:
-    name: windows / ${{ matrix.name }}
-    runs-on: windows-latest
-    timeout-minutes: 30
-    # Known issue: srcds.exe stops after "Network:" and never loads the map on
-    # the runner; the install itself works. Kept visible but non-blocking.
-    continue-on-error: true
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - { name: ours sm13-latest, sm: ours, line: sm13-latest }
-          - { name: rom4s, sm: rom4s, line: "" }
-    steps:
-      - uses: actions/checkout@v4
-      - name: Cache downloads
-        uses: actions/cache@v4
-        with:
-          path: .dl
-          key: dl-windows-${{ hashFiles('manifest/sources.json') }}
-          restore-keys: dl-windows-
-      - name: Install + smoke (Windows PowerShell 5.1)
-        shell: powershell
-        run: |
-          $line = '${{ matrix.line }}'
-          $extra = @{}
-          if ($line) { $extra.SMLine = $line }
-          .\install.ps1 -Dir "$env:RUNNER_TEMP\css34" -Cache "$PWD\.dl" -SM ${{ matrix.sm }} @extra -Smoke
-          if ($LASTEXITCODE) { exit $LASTEXITCODE }
-      - name: Logs
-        if: failure()
-        shell: bash
-        run: |
-          tail -n 80 "$RUNNER_TEMP"/css34/cstrike/console.log || true
-          tail -n 40 "$RUNNER_TEMP"/css34/cstrike/addons/sourcemod/logs/*.log || true
