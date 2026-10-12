@@ -64,4 +64,4 @@ jobs:
             gh release create "$tag" --target "$GITHUB_SHA" --title "ProtectCMDS ${commit:0:7} (css34, linux)" \
               --notes "protectcmds.ext.so built from fmu1337/ProtectCMDS@${commit} (ENGINE=css34) on debian:11: protectcmds-api7 (SM 1.6 SDK) for SourceMod 1.11/1.12, protectcmds-api9 (SM 1.13 SDK) for SourceMod 1.13. Used by install.sh --plugins protectcmds."
           fi
-          gh release upload "$tag" out/protectcmds-api7.ext.so out/protectcmds-api9.ext.so --clobber
+          gh release upload "$tag" out/protectcmds-api7.ext.so out/protectcmds-api9.ext.so out/protectcmds-api9-sm7394.ext.so --clobber

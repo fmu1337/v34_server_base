@@ -50,6 +50,9 @@ build() { # name smsdk
     SMSDK="${smsdk}" MMSOURCE110="${WORK}/mm110" HL2SDK_ORIG="${WORK}/hl2sdk-episode1" \
     -j"$(nproc)" >"${OUT}/build-${name}.log" 2>&1 || { tail -n 40 "${OUT}/build-${name}.log"; exit 1; }
   cp Release.css34/protectcmds.ext.so "${OUT}/protectcmds-${name}.ext.so"
+  if [[ "${name}" == api9 ]]; then  # SDK in the name: new builds get new cache keys
+    cp "${OUT}/protectcmds-api9.ext.so" "${OUT}/protectcmds-api9-sm7394.ext.so"
+  fi
 }
 
 build api7 "${WORK}/sm16"
