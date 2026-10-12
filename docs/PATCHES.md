@@ -96,7 +96,7 @@ restricted» он не убирает; `CSteam3::OnGSClientDenyHelper` не тр
 | Файл | SDK | Для SourceMod |
 |------|-----|---------------|
 | `protectcmds-api7.ext.so` | SM 1.6 | 1.11, 1.12 (принимают API ≤ 8) |
-| `protectcmds-api9.ext.so` | SM 1.13.0.7472 | 1.13 (принимает API ≥ 9) |
+| `protectcmds-api9.ext.so` | SM 1.13.0.7394 (API 9) | 1.13 (7394 принимает только 9, 7472 — 9…11) |
 
 Установщик выбирает вариант по версии в `addons/sourcemod/bin/sourcemod.logic.so` и ставит его
 как `extensions/protectcmds.ext.so`.

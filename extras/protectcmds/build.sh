@@ -5,13 +5,13 @@
 #
 # Two binaries, because SourceMod changed the extension API in between:
 #   protectcmds-api7.ext.so  SM 1.6 SDK   -> SourceMod 1.11 / 1.12 (accept API <= 8)
-#   protectcmds-api9.ext.so  SM 1.13 SDK  -> SourceMod 1.13       (accepts API >= 9)
+#   protectcmds-api9.ext.so  SM 1.13.0.7394 SDK -> SourceMod 1.13 (7394 loads only 9, 7472 loads 9..11)
 set -euo pipefail
 
 OUT="$(mkdir -p "${1:-out}" && cd "${1:-out}" && pwd)"
 REPO="${PROTECTCMDS_REPO:-https://github.com/fmu1337/ProtectCMDS}"
 COMMIT="${PROTECTCMDS_COMMIT:-bbdc76641ec905858657a50ba78894a41e6c25d3}"
-SM113_COMMIT="${SM113_COMMIT:-6eb5f8fa381100ed7cac1ab62a4ece11795a5d92}"  # 1.13.0.7472, sm13-latest
+SM113_COMMIT="${SM113_COMMIT:-bd1bde7def4c1e3e584c320dfb2ac974eb4d7433}"  # 1.13.0.7394: API 9 (1.13 loads 9..11)
 WORK="$(mktemp -d)"
 
 if ! command -v make >/dev/null 2>&1 && command -v apt-get >/dev/null 2>&1 && [[ "$(id -u)" == 0 ]]; then
