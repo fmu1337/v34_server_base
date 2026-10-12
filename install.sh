@@ -16,7 +16,7 @@ CACHE_DIR=""
 SERVER_SOURCE="auto"     # auto | mirror | rom4s | skip
 SM_SOURCE=""             # ours | rom4s | myarena | none   (empty = manifest default)
 SM_LINE=""               # ours only (empty = manifest default)
-PATCHES="bufferfix,steamclient,healthfix"
+PATCHES="bufferfix,steamclient"
 VALVE_RC="auto"          # auto | stock | debian9 | minimal
 PLUGINS="smac,protectcmds"
 SMAC_MODE="auto"         # auto | compile | prebuilt
@@ -28,7 +28,7 @@ HOSTNAME_CFG="CS:S v34 server"
 RCON_PASSWORD=""
 FORCE=0
 
-ALL_PATCHES="bufferfix steamclient healthfix steamdeny lanfix"
+ALL_PATCHES="bufferfix steamclient steamdeny lanfix"
 ALL_PLUGINS="smac protectcmds"
 
 usage() {
@@ -45,13 +45,10 @@ Server:
   --force               wipe an existing non-empty --dir before installing
 
 Patches (--patch LIST, comma separated, or all / none;
-default: bufferfix,steamclient,healthfix):
+default: bufferfix,steamclient):
   bufferfix     engine_*.so + server_i486.so: memcpy -> memmove (hangs,
                 'Unknown command ":"', 'Incorrect price blob version!')
   steamclient   steamclient_i486.so: mute 'Assertion Failed: !"Implement me!"'
-  healthfix     HealthLimitFix (Reg1oxeN) as a binary patch: m_iHealth sent
-                with 17 bits instead of 10 (HP above 1023 shown correctly),
-                SendTable CRC 1337; adds sv_sendtables 1 to server.cfg
   steamdeny     engine: don't kick on Steam deny NoLicense / ConnectionLost /
                 ConnectionError / ValidationStalled (GoDtm666)
   lanfix        engine: accept internet clients with sv_lan 1 (GoDtm666)
@@ -394,7 +391,6 @@ write_configs() {
       echo "sv_cheats 0"
       echo "sv_pure 0"
       echo "mp_dynamicpricing 0"
-      has_item "${PATCHES}" healthfix && echo "sv_sendtables 1 // HealthLimitFix"
       echo "exec banned_user.cfg"
       echo "exec banned_ip.cfg"
       echo "writeid"
@@ -452,7 +448,7 @@ interactive() {
     lines="$(manifest_lines | tr '\n' ' ')"
     SM_LINE="$(ask "SourceMod line (${lines% })" "${SM_LINE}")"
   fi
-  PATCHES="$(ask "Patches (bufferfix,steamclient,healthfix,steamdeny,lanfix | all | none)" "${PATCHES}")"
+  PATCHES="$(ask "Patches (bufferfix,steamclient,steamdeny,lanfix | all | none)" "${PATCHES}")"
   VALVE_RC="$(ask "valve.rc: auto | stock | debian9 | minimal" "${VALVE_RC}")"
   PLUGINS="$(ask "Plugins (smac,protectcmds | none)" "${PLUGINS}")"
   [[ "$(ask "Run smoke test after install? (y/n)" n)" == y ]] && SMOKE=1

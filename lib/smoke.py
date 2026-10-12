@@ -173,7 +173,7 @@ def main() -> int:
                         if "<Failed>" in line or "<Error>" in line:
                             failures.append(f"plugin failed: {line.strip()}")
                     for name in args.expect_plugin:
-                        # `sm plugins list` shows titles ("Health Limit Fix"), not file names
+                        # `sm plugins list` shows titles ("SMAC: Core"), not file names
                         if name.lower().replace(" ", "") not in out.lower().replace(" ", ""):
                             failures.append(f"plugin {name} not listed")
         try:

@@ -2,7 +2,7 @@
 """
 Binary patches for the CS:S v34 Linux dedicated server (ELF32, i386).
 
-Patches (pick with --only, default: bufferfix,steamclient,healthfix):
+Patches (pick with --only, default: bufferfix,steamclient):
 
   bufferfix    engine_{amd,i486,i686}.so, cstrike/bin/server_i486.so
                Retarget every `memcpy` relocation to `memmove` and zero the
@@ -11,12 +11,6 @@ Patches (pick with --only, default: bufferfix,steamclient,healthfix):
 
   steamclient  bin/steamclient_i486.so
                Mute the three `Assertion Failed: !"Implement me!"` call sites.
-
-  healthfix    cstrike/bin/server_i486.so + engine_*.so (HealthLimitFix by
-               Reg1oxeN, done statically instead of from a SourceMod plugin)
-               - DT_BasePlayer `m_iHealth` SendProp: nBits 10 -> 17
-               - SendTable_GetCRC() returns 1337 so clients take the server's
-                 tables (needs sv_sendtables 1)
 
   steamdeny    engine_*.so (from GoDtm666's status/ping protect engines)
                CSteam3::OnGSClientDenyHelper ignores NoLicense,
@@ -32,7 +26,7 @@ Every patch checks the original bytes before writing and recognises its own
 result, so a second run reports "already". Stock files are kept as `*.orig`.
 
 Usage:
-  python3 patches/srcds_patch.py SERVER_DIR [--only bufferfix,healthfix]
+  python3 patches/srcds_patch.py SERVER_DIR [--only bufferfix,steamdeny]
 """
 from __future__ import annotations
 
@@ -51,8 +45,8 @@ ENGINE_FILES = ("bin/engine_amd.so", "bin/engine_i486.so", "bin/engine_i686.so")
 SERVER_FILE = "cstrike/bin/server_i486.so"
 STEAMCLIENT_FILE = "bin/steamclient_i486.so"
 
-ALL_PATCHES = ("bufferfix", "steamclient", "healthfix", "steamdeny", "lanfix")
-DEFAULT_PATCHES = ("bufferfix", "steamclient", "healthfix")
+ALL_PATCHES = ("bufferfix", "steamclient", "steamdeny", "lanfix")
+DEFAULT_PATCHES = ("bufferfix", "steamclient")
 
 
 class PatchError(Exception):
@@ -213,68 +207,6 @@ def patch_steamclient(elf: Elf) -> str:
     return f"muted {len(todo)} assertion site(s)"
 
 
-# ---- healthfix ---------------------------------------------------------------
-
-HEALTH_BITS_OLD, HEALTH_BITS_NEW = 10, 17
-SENDTABLE_CRC = 1337
-
-
-def patch_health_server(elf: Elf) -> str:
-    """nBits argument of SendPropInt("m_iHealth", ...) in ServerClassInit<DT_BasePlayer>."""
-    data = elf.data
-    func = elf.off(elf.need_symbol("_Z15ServerClassInitIN13DT_BasePlayer7ignoredEEiPT_"))
-    name = struct.pack("<I", elf.string_vaddr(b"m_iHealth"))
-    # mov $"m_iHealth", %reg  (b8+r imm32)
-    p = next((i for i in range(func, func + 0x2000)
-              if 0xB8 <= data[i] <= 0xBF and data[i + 1 : i + 5] == name), None)
-    if p is None:
-        raise PatchError("m_iHealth SendProp not found")
-    # The argument block of this SendPropInt call ends at the next `call`;
-    # arguments are stored with `mov %reg, disp8(%esp)` and nBits is the 4th
-    # argument after the sret pointer: 0x10(%esp).
-    call = data.find(b"\xe8", p + 5, p + 0x40)
-    prev = data.rfind(b"\xe8", p - 0x60, p)  # end of the previous SendProp call
-    lo = prev + 5 if prev >= 0 else p - 0x40
-    if call < 0:
-        raise PatchError("SendPropInt call not found")
-    store = next((i for i in range(call - 4, lo - 1, -1)
-                  if data[i] == 0x89 and data[i + 1] & 0xC7 == 0x44
-                  and data[i + 2] == 0x24 and data[i + 3] == 0x10), None)
-    if store is None:
-        raise PatchError("nBits store not found")
-    reg = (data[store + 1] >> 3) & 7
-    for i in range(store - 5, lo - 1, -1):
-        if data[i] == 0xB8 + reg:
-            bits = _u32(data, i + 1)
-            if bits == HEALTH_BITS_NEW:
-                return "already"
-            if bits != HEALTH_BITS_OLD:
-                raise PatchError(f"unexpected m_iHealth nBits {bits}")
-            struct.pack_into("<I", data, i + 1, HEALTH_BITS_NEW)
-            return f"m_iHealth nBits {HEALTH_BITS_OLD} -> {HEALTH_BITS_NEW}"
-    raise PatchError("nBits immediate not found")
-
-
-def patch_health_engine(elf: Elf) -> str:
-    """SendTable_GetCRC: `mov g_SendTableCRC, %eax; ret` -> `mov $1337, %eax; ret`."""
-    data = elf.data
-    va = elf.need_symbol("_Z16SendTable_GetCRCv")
-    o = elf.off(va)
-    new = b"\xb8" + struct.pack("<I", SENDTABLE_CRC) + b"\xc3"
-    if data[o : o + 6] == new:
-        return "already"
-    if data[o] != 0xA1 or data[o + 5] != 0xC3:
-        raise PatchError("unexpected SendTable_GetCRC code")
-    # The load address is filled in by an R_386_32 relocation; drop it so the
-    # loader does not add a symbol address to our constant.
-    rel = [ro for ro, r_off, _ in elf.rel_entries() if r_off == va + 1]
-    if len(rel) != 1:
-        raise PatchError("SendTable_GetCRC relocation not found")
-    data[rel[0] + 4] = R_386_NONE
-    data[o : o + 6] = new
-    return f"SendTable_GetCRC returns {SENDTABLE_CRC}"
-
-
 # ---- steamdeny ---------------------------------------------------------------
 
 # EDenyReason values that no longer kick the client.
@@ -344,13 +276,12 @@ def plan(patches):
     """file -> list of (patch name, function)"""
     todo: dict[str, list] = {}
     for rel in ENGINE_FILES:
-        for name, fn in (("bufferfix", patch_bufferfix), ("healthfix", patch_health_engine),
+        for name, fn in (("bufferfix", patch_bufferfix),
                          ("steamdeny", patch_steamdeny), ("lanfix", patch_lanfix)):
             if name in patches:
                 todo.setdefault(rel, []).append((name, fn))
-    for name, fn in (("bufferfix", patch_bufferfix), ("healthfix", patch_health_server)):
-        if name in patches:
-            todo.setdefault(SERVER_FILE, []).append((name, fn))
+    if "bufferfix" in patches:
+        todo.setdefault(SERVER_FILE, []).append(("bufferfix", patch_bufferfix))
     if "steamclient" in patches:
         todo.setdefault(STEAMCLIENT_FILE, []).append(("steamclient", patch_steamclient))
     return todo

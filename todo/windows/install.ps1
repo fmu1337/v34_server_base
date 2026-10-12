@@ -4,8 +4,7 @@
 
 .DESCRIPTION
   Same options as install.sh where they apply on Windows. The binary patches
-  (bufferfix, steamclient, steamdeny, lanfix) are Linux-only; healthfix is
-  installed as the HealthLimitFix SourceMod plugin on Windows.
+  (bufferfix, steamclient, steamdeny, lanfix) are Linux-only.
 
 .EXAMPLE
   powershell -ExecutionPolicy Bypass -File install.ps1 -Dir C:\css34
@@ -18,7 +17,7 @@ param(
   [ValidateSet('auto', 'mirror', 'rom4s', 'skip')][string]$ServerSource = 'auto',
   [ValidateSet('', 'ours', 'rom4s', 'myarena', 'none')][string]$SM = '',
   [string]$SMLine = '',
-  [string]$Patch = 'healthfix',
+  [string]$Patch = 'none',
   [ValidateSet('auto', 'stock', 'debian9', 'minimal')][string]$ValveRc = 'auto',
   [string]$Plugins = 'smac',  # protectcmds is Linux-only
   [ValidateSet('auto', 'compile', 'prebuilt')][string]$SmacMode = 'auto',
@@ -44,7 +43,7 @@ function Die($m) { Write-Host "ERROR: $m" -ForegroundColor Red; exit 1 }
 
 function Split-List($v) {
   if ($v -eq 'none' -or [string]::IsNullOrEmpty($v)) { return @() }
-  if ($v -eq 'all') { return @('healthfix') }
+  if ($v -eq 'all') { return @() }
   return $v.Split(',') | ForEach-Object { $_.Trim() } | Where-Object { $_ }
 }
 
@@ -101,7 +100,7 @@ $PatchList = Split-List $Patch
 $PluginList = Split-List $Plugins
 foreach ($p in $PatchList) {
   if ($p -in 'bufferfix', 'steamclient', 'steamdeny', 'lanfix') { Warn "$p is a Linux-only patch; skipped on Windows" }
-  elseif ($p -ne 'healthfix') { Die "unknown patch: $p" }
+  else { Die "unknown patch: $p" }
 }
 foreach ($p in $PluginList) {
   if ($p -eq 'protectcmds') { Warn 'ProtectCMDS has no Windows build; skipped' }
@@ -191,17 +190,6 @@ if ($SM -ne 'none') {
   }
 }
 
-# ---- healthfix ----------------------------------------------------------------
-if ('healthfix' -in $PatchList) {
-  if (Test-Path $SMDir) {
-    Log 'HealthLimitFix'
-    Copy-Item -Force (Join-Path $Root 'todo/windows/healthfix/plugins/HealthLimitFix.smx') (Join-Path $SMDir 'plugins')
-    Copy-Item -Force (Join-Path $Root 'todo/windows/healthfix/gamedata/health-patch.txt') (Join-Path $SMDir 'gamedata')
-    New-Item -ItemType Directory -Force (Join-Path $SMDir 'scripting') | Out-Null
-    Copy-Item -Force (Join-Path $Root 'todo/windows/healthfix/scripting/HealthLimitFix.sp') (Join-Path $SMDir 'scripting')
-  } else { Warn 'healthfix needs SourceMod; skipped' }
-}
-
 # ---- SMAC ---------------------------------------------------------------------
 if ('smac' -in $PluginList) {
   if (Test-Path $SMDir) {
@@ -250,7 +238,6 @@ if (-not (Test-Path $cfg) -or -not (Test-Path (Join-Path $Dir '.installer'))) {
   $lines = @("hostname `"$Hostname`"")
   if ($Rcon) { $lines += "rcon_password `"$Rcon`"" }
   $lines += 'sv_lan 0', 'sv_cheats 0', 'sv_pure 0', 'mp_dynamicpricing 0'
-  if ('healthfix' -in $PatchList) { $lines += 'sv_sendtables 1 // HealthLimitFix' }
   $lines += 'exec banned_user.cfg', 'exec banned_ip.cfg', 'writeid', 'writeip'
   Set-Content -Encoding ASCII $cfg $lines
 }
@@ -287,7 +274,6 @@ if ($Smoke) {
   if (-not $py) { Die 'smoke test needs python' }
   $smokeArgs = @((Join-Path $Root 'lib/smoke.py'), $Dir, '--sm', $SM)
   if ('smac' -in $PluginList) { $smokeArgs += '--expect-plugin', 'smac' }
-  if ('healthfix' -in $PatchList) { $smokeArgs += '--expect-plugin', 'Health Limit Fix' }
   & $py.Source -I @smokeArgs
   exit $LASTEXITCODE
 }

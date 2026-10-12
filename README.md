@@ -21,7 +21,7 @@ sudo ./install.sh --deps-only        # 32-bit библиотеки (apt / dnf), 
 | Шаг | По умолчанию | Варианты |
 |-----|--------------|----------|
 | Файлы сервера | релиз [`v34_srcds_server`](https://github.com/fmu1337/v34_srcds_server/releases/tag/css34-4044), при ошибке — bitbucket rom4s | `--server-source auto\|mirror\|rom4s\|skip` |
-| Патчи | `bufferfix,steamclient,healthfix` | + `steamdeny`, `lanfix`; `--patch LIST\|all\|none`, `--valve-rc auto\|stock\|debian9\|minimal` |
+| Патчи | `bufferfix,steamclient` | + `steamdeny`, `lanfix`; `--patch LIST\|all\|none`, `--valve-rc auto\|stock\|debian9\|minimal` |
 | Metamod + SourceMod | наш [`sourcemod-css34`](https://github.com/fmu1337/sourcemod-css34), линия `sm13-latest` | `--sm ours\|rom4s\|myarena\|none`, `--sm-line …` |
 | Плагины | SMAC ([`smac_v34`](https://github.com/fmu1337/smac_v34)) + ProtectCMDS ([WeSTManCoder](https://github.com/WeSTManCoder/ProtectCMDS)) | `--plugins smac,protectcmds\|none`, `--smac-mode auto\|compile\|prebuilt` |
 
@@ -69,7 +69,7 @@ GeoIP2 `GeoLite2-Country.mmdb` (без неё не грузится `geoip.ext`,
 ```
 install.sh                      установщик
 manifest/sources.json           все ссылки (зеркало, rom4s, myarena, наши релизы) + sha256
-patches/srcds_patch.py          бинарные патчи (bufferfix, steamclient, healthfix, steamdeny, lanfix)
+patches/srcds_patch.py          бинарные патчи (bufferfix, steamclient, steamdeny, lanfix)
 configs/valve-*.rc              варианты valve.rc
 extras/protectcmds/              сборка ProtectCMDS, его конфиг и плагин status/ping
 lib/smoke.py                    smoke-тест через RCON

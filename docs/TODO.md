@@ -3,8 +3,7 @@
 ## Windows
 
 Отложено, сейчас установщик только для Linux. Заготовка лежит в `todo/windows/`:
-`install.ps1` ставит сервер, Metamod/SourceMod, HealthLimitFix-плагин и SMAC (с
-компиляцией), пишет `server.cfg` и `start-server.bat`. Из CI убран.
+`install.ps1` ставит сервер, Metamod/SourceMod и SMAC (с компиляцией), пишет `server.cfg` и `start-server.bat`. Из CI убран.
 
 Что известно:
 
@@ -22,10 +21,7 @@
 - **Metamod/SourceMod:** наши Windows-пакеты для `sm12-latest`, `sm13-*`; у
   `sm13-mm20-khook` Windows-сборка падает (см. sourcemod-css34). У rom4s нет Windows-сборки
   Metamod — берётся наш MM 1.10.7 (`1.11.0.6572-mm1.10.7`). myarena — только Linux.
-- **Патчи:** `bufferfix` на Windows не нужен (проблема glibc). HealthLimitFix — только
-  плагином (`todo/windows/healthfix/`); на SM 1.12+ плагин падает с
-  `Read health-patch Config Fail`, на SM 1.11 работает — для Windows нужен бинарный патч
-  `server.dll`/`engine.dll` по сигнатурам из `health-patch.txt`.
+- **Патчи:** `bufferfix` на Windows не нужен (проблема glibc).
 - **steamdeny/lanfix для `engine.dll`:** `css_v34_engine_fix.zip` (GoDtm666) содержит
   пропатченный `engine.dll` — те же правки, что на Linux: таблица переходов
   `OnGSClientDenyHelper` (записи 4/11/12/14 → `ret 0Ch`), `jne`→`jmp` перед отказом
