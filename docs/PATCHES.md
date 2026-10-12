@@ -87,7 +87,16 @@ observer loop, SourceTV, урон и т.п.). `OSFix` (тот же memcpy → me
 restricted» он не убирает; `CSteam3::OnGSClientDenyHelper` не трогает. Поэтому `steamdeny` и
 `lanfix` остаются отдельными бинарными патчами, а от status/ping protect больше ничего не нужно.
 
-Бинарь собирает `.github/workflows/protectcmds.yml` из
-`fmu1337/ProtectCMDS@bbdc766` (форк WeSTManCoder/ProtectCMDS, сейчас без отличий) (`ENGINE=css34`, SM 1.6 SDK, MM 1.10, hl2sdk-episode1)
-в `debian:11` — так он грузится на старых glibc — и кладёт в релиз
-`protectcmds-bbdc766` этого репозитория. Скрипт сборки: `extras/protectcmds/build.sh`.
+Бинарь собирает `.github/workflows/protectcmds.yml` (скрипт `extras/protectcmds/build.sh`) из
+`fmu1337/ProtectCMDS@bbdc766` (форк WeSTManCoder/ProtectCMDS, сейчас без отличий;
+`ENGINE=css34`, MM 1.10, hl2sdk-episode1) в `debian:11` — так он грузится на старых glibc — и
+кладёт в релиз `protectcmds-bbdc766` этого репозитория. Вариантов два, потому что SourceMod
+1.13 поднял версию API расширений:
+
+| Файл | SDK | Для SourceMod |
+|------|-----|---------------|
+| `protectcmds-api7.ext.so` | SM 1.6 | 1.11, 1.12 (принимают API ≤ 8) |
+| `protectcmds-api9.ext.so` | SM 1.13.0.7472 | 1.13 (принимает API ≥ 9) |
+
+Установщик выбирает вариант по версии в `addons/sourcemod/bin/sourcemod.logic.so` и ставит его
+как `extensions/protectcmds.ext.so`.
