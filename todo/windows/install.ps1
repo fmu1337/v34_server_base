@@ -157,7 +157,7 @@ if ($SM -ne 'none') {
   Remove-Item -Recurse -Force (Join-Path $CS 'addons/metamod'), (Join-Path $CS 'addons/metamod.vdf'), $SMDir -ErrorAction SilentlyContinue
   switch ($SM) {
     'ours' {
-      $line = $Manifest.sourcemod.ours.lines.$SMLine
+      $line = $Manifest.sourcemod.ours.lines.$SMLine.releases | Select-Object -First 1
       if (-not $line) { Die "unknown -SMLine $SMLine" }
       if ($line.linux_only) { Die "$SMLine has no working Windows build; pick another -SMLine" }
       $base = "$($Manifest.sourcemod.ours.release)/$($line.tag)"

@@ -20,6 +20,7 @@ jobs:
         include:
           - { name: ours sm13-latest, args: "--sm ours --sm-line sm13-latest" }
           - { name: ours sm12-latest, args: "--sm ours --sm-line sm12-latest" }
+          - { name: ours sm11-oldstable, args: "--sm ours --sm-line sm11-oldstable" }
           - { name: rom4s, args: "--sm rom4s" }
           - { name: myarena, args: "--sm myarena" }
           - { name: all patches, args: "--sm ours --patch all" }

@@ -4,14 +4,32 @@
     "mirror_release": "https://github.com/fmu1337/v34_srcds_server/releases/download/css34-4044",
     "rom4s": "https://bitbucket.org/rom4s/other.get/downloads",
     "linux": [
-      { "name": "srcds_css34_4044.zip", "sha256": null },
-      { "name": "srcds_css34_l_a.zip", "sha256": null },
-      { "name": "srcds_css34_l_eSTEAMATiON.zip", "sha256": null }
+      {
+        "name": "srcds_css34_4044.zip",
+        "sha256": null
+      },
+      {
+        "name": "srcds_css34_l_a.zip",
+        "sha256": null
+      },
+      {
+        "name": "srcds_css34_l_eSTEAMATiON.zip",
+        "sha256": null
+      }
     ],
     "windows": [
-      { "name": "srcds_css34_4044.zip", "sha256": null },
-      { "name": "srcds_css34_w_a.zip", "sha256": null },
-      { "name": "srcds_css34_w_eSTEAMATiON.RC9.U1.zip", "sha256": null }
+      {
+        "name": "srcds_css34_4044.zip",
+        "sha256": null
+      },
+      {
+        "name": "srcds_css34_w_a.zip",
+        "sha256": null
+      },
+      {
+        "name": "srcds_css34_w_eSTEAMATiON.RC9.U1.zip",
+        "sha256": null
+      }
     ]
   },
   "sourcemod": {
@@ -20,28 +38,68 @@
       "default_line": "sm13-latest",
       "release": "https://github.com/fmu1337/sourcemod-css34/releases/download",
       "lines": {
-        "sm12-latest": {
-          "tag": "1.12.0.7253-mm1.12.0",
-          "sm": "sourcemod-1.12.0-git7253-css34",
-          "mm": "mmsource-1.12.0-dev-css34"
+        "sm13-latest": {
+          "releases": [
+            {
+              "tag": "1.13.0.7472-mm1.12.0",
+              "sm": "sourcemod-1.13.0-git7472-css34",
+              "mm": "mmsource-1.12.0-dev-css34"
+            },
+            {
+              "tag": "1.13.0.7394-mm1.12.0",
+              "sm": "sourcemod-1.13.0-git7394-css34",
+              "mm": "mmsource-1.12.0-dev-css34"
+            }
+          ]
         },
         "sm13-dev": {
-          "tag": "1.13.0.7404-mm1.12.0",
-          "sm": "sourcemod-1.13.0-git7404-css34",
-          "mm": "mmsource-1.12.0-dev-css34"
+          "releases": [
+            {
+              "tag": "1.13.0.7404-mm1.12.0",
+              "sm": "sourcemod-1.13.0-git7404-css34",
+              "mm": "mmsource-1.12.0-dev-css34"
+            }
+          ]
         },
-        "sm13-latest": {
-          "tag": "1.13.0.7472-mm1.12.0",
-          "sm": "sourcemod-1.13.0-git7472-css34",
-          "mm": "mmsource-1.12.0-dev-css34"
+        "sm12-latest": {
+          "releases": [
+            {
+              "tag": "1.12.0.7253-mm1.12.0",
+              "sm": "sourcemod-1.12.0-git7253-css34",
+              "mm": "mmsource-1.12.0-dev-css34"
+            },
+            {
+              "tag": "1.12.0.7245-mm1.12.0",
+              "sm": "sourcemod-1.12.0-git7245-css34",
+              "mm": "mmsource-1.12.0-dev-css34"
+            },
+            {
+              "tag": "1.12.0.7239-mm1.12.0",
+              "sm": "sourcemod-1.12.0-git7239-css34",
+              "mm": "mmsource-1.12.0-dev-css34"
+            }
+          ]
+        },
+        "sm11-oldstable": {
+          "releases": [
+            {
+              "tag": "1.11.0.6970-mm1.10.7",
+              "sm": "sourcemod-1.11.0-git6970-css34",
+              "mm": "mmsource-1.10.7-dev-css34"
+            }
+          ]
         },
         "sm13-mm20-khook": {
-          "tag": "1.13.0.7565-mm2.0.0-khook-dhooks",
-          "sm": "sourcemod-1.13.0-git7565-css34",
-          "mm": "mmsource-2.0.0-dev-css34",
-          "linux_only": true
+          "releases": [
+            {
+              "tag": "1.13.0.7565-mm2.0.0-khook-dhooks",
+              "sm": "sourcemod-1.13.0-git7565-css34",
+              "mm": "mmsource-2.0.0-dev-css34"
+            }
+          ]
         }
-      }
+      },
+      "_comment": "Each line lists releases in order of preference; install.sh takes the first one whose files download (a release can be a draft while it is being rebuilt)."
     },
     "rom4s": {
       "_comment": "rom4s drop: Metamod 1.10.6 + SourceMod 1.11.0.6572",

@@ -103,6 +103,16 @@ print(v if not isinstance(v, bool) else str(v).lower())
 PY
 }
 
+# manifest_releases LINE -> "tag sm mm" lines in order of preference
+manifest_releases() {
+  python3 -I - "${MANIFEST}" "$1" <<'PY'
+import json, sys
+line = json.load(open(sys.argv[1]))["sourcemod"]["ours"]["lines"].get(sys.argv[2])
+for r in (line or {}).get("releases", []):
+    print(r["tag"], r["sm"], r["mm"])
+PY
+}
+
 manifest_lines() {
   python3 -I - "${MANIFEST}" <<'PY'
 import json, sys
@@ -261,12 +271,25 @@ install_sourcemod() {
 
   case "${SM_SOURCE}" in
     ours)
-      local base tag
+      local base tag smn mmn ok=0
       base="$(manifest_get sourcemod.ours.release)"
-      tag="$(manifest_get "sourcemod.ours.lines.${SM_LINE}.tag")"
-      [[ -n "${tag}" ]] || die "unknown --sm-line ${SM_LINE}"
-      mm_url="${base}/${tag}/$(manifest_get "sourcemod.ours.lines.${SM_LINE}.mm")-linux.tar.gz"
-      sm_url="${base}/${tag}/$(manifest_get "sourcemod.ours.lines.${SM_LINE}.sm")-linux.tar.gz"
+      [[ -n "$(manifest_releases "${SM_LINE}")" ]] || die "unknown --sm-line ${SM_LINE}"
+      # First release of the line whose files download (one may be a draft while rebuilt).
+      while read -r tag smn mmn; do
+        mm_url="${base}/${tag}/${mmn}-linux.tar.gz"
+        sm_url="${base}/${tag}/${smn}-linux.tar.gz"
+        if fetch "${CACHE_DIR}/ours-${tag}-${mmn}-linux.tar.gz" - "${mm_url}" &&
+           fetch "${CACHE_DIR}/ours-${tag}-${smn}-linux.tar.gz" - "${sm_url}"; then
+          ok=1
+          echo "    release ${tag}"
+          break
+        fi
+        warn "release ${tag} is not downloadable, trying the next one"
+      done < <(manifest_releases "${SM_LINE}")
+      [[ "${ok}" == 1 ]] || die "no downloadable release for --sm-line ${SM_LINE}"
+      unpack "${CACHE_DIR}/ours-${tag}-${mmn}-linux.tar.gz" "${cs}"
+      unpack "${CACHE_DIR}/ours-${tag}-${smn}-linux.tar.gz" "${cs}"
+      mm_url=""   # already unpacked
       ;;
     rom4s)
       mm_url="$(manifest_get sourcemod.rom4s.linux.mm)"
