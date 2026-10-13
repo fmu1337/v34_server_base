@@ -66,7 +66,8 @@ cstrike/addons/sourcemod/data/protectcmds/steamid_hash.txt
   заменить).
 
 Наш `protectcmds-api7` из исходников (`bbdc766`) функционально то же, но собран на debian:11
-(glibc ≤ 2.32). Для SM ≤ 1.12 можно брать бинарь из архива как есть.
+(glibc ≤ 2.32). Для SM ≤ 1.12 можно брать бинарь из архива как есть (с нашими
+`protectcmds.ini`/`blockcmds.txt` вместо архивных).
 
 ## Что поправить в форке `fmu1337/ProtectCMDS`
 
@@ -89,8 +90,9 @@ cstrike/addons/sourcemod/data/protectcmds/steamid_hash.txt
 6. **Мелочи.** `blockcmds_maxcommands` читается из `[blockCmds]`, включение — из `[BlockCmds]`
    (работает только из-за регистронезависимого INIReader); `strcpy` в буфер 1024 после проверки
    длины; нет Windows-сборки.
-7. **Metamod.** Собрано против MM 1.10 `core-legacy`; в нашем CI грузится и с MM 1.10 (rom4s), и
-   с MM 1.12 (SM 1.12/1.13). Закрепить тестом.
+7. **Metamod.** Собрано против MM 1.10 `core-legacy`; в нашем CI грузится с MM 1.10 (rom4s),
+   MM 1.11 (myarena), MM 1.12 (SM 1.12/1.13) и MM 2.0 (`sm13-mm20`). `sm13-mm20-khook` не
+   проверялся.
 
 ## Как отдавать разные сборки
 

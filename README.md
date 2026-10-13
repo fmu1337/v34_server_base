@@ -56,8 +56,21 @@ MM и SM всегда ставятся парой из одного источн
 
 ### SMAC
 
-`auto`: компилирует плагины `spcomp` из установленного SM (32-bit, нужны библиотеки из
-`--deps-only`); если не вышло — берёт готовые `.smx` из репозитория.
+Берётся из ветки `master` [`smac_v34`](https://github.com/fmu1337/smac_v34). `--smac-mode auto`:
+компилирует плагины `spcomp` из установленного SM (32-bit, нужны библиотеки из `--deps-only`);
+если не вышло — берёт готовые `.smx` из репозитория SMAC. `compile` — только компиляция,
+`prebuilt` — только готовые.
+
+### ProtectCMDS
+
+SM-расширение (только Linux), собирается здесь же (`extras/protectcmds/build.sh`,
+workflow `protectcmds`) и лежит в релизе
+[`protectcmds-bbdc766`](https://github.com/fmu1337/v34_server_base/releases/tag/protectcmds-bbdc766)
+в двух вариантах: API 7 (SM 1.11/1.12) и API 9 (SM 1.13). Нужный выбирается по
+`css34-package.json` нашего пакета SM, для rom4s/myarena — по версии SM. Ставится с
+`protectcmds.ini` (апдейтер выключен, `osfix` выключен при `bufferfix`), `blockcmds.txt` и
+плагином `protectcmds_status.smx`: клиентские `status`/`ping` уходят в защищённые `sm_status`/
+`sm_ping` из SMAC. Подробно — [docs/PROTECTCMDS.md](docs/PROTECTCMDS.md).
 
 ## Все опции
 
@@ -71,18 +84,23 @@ MM и SM всегда ставятся парой из одного источн
   `sm version`, `sm exts list`, `sm plugins list`;
 - `--server-source skip` — доустановить / переустановить SM, патчи и плагины в уже
   существующий сервер;
-- `--cache DIR` — общий кэш загрузок;
-- `GITHUB_TOKEN=…` — если репозиторий с зеркалом приватный.
+- `--cache DIR` — общий кэш загрузок (ключ — тег/имя файла; файлы с sha256 в манифесте
+  перепроверяются);
+- `--sm-pinned` — ставить SM только из закреплённых тегов, без указателя линии;
+- `GITHUB_TOKEN=…` — передаётся в запросы к github.com (лимиты API, приватные форки).
 
 ## Устройство
 
 ```
-install.sh                      установщик
-manifest/sources.json           все ссылки (зеркало, rom4s, myarena, наши релизы) + sha256
-patches/srcds_patch.py          бинарные патчи (bufferfix, steamclient, steamdeny, lanfix)
-configs/valve-*.rc              варианты valve.rc
-extras/protectcmds/              сборка ProtectCMDS, его конфиг и плагин status/ping
-lib/smoke.py                    smoke-тест через RCON
-.github/workflows/test.yml      CI: полная установка + smoke
-todo/windows/                    отложенный Windows-установщик (docs/TODO.md)
+install.sh                         установщик
+manifest/sources.json              все ссылки (наши релизы, rom4s, myarena, SMAC, GeoIP) + sha256
+patches/srcds_patch.py             бинарные патчи (bufferfix, steamclient, steamdeny, lanfix)
+configs/valve-*.rc                 варианты valve.rc
+extras/protectcmds/                сборка ProtectCMDS, его конфиги и плагин status/ping
+lib/smoke.py                       smoke-тест через RCON
+docs/                              патчи, ProtectCMDS, TODO
+.github/workflows/test.yml         CI: полная установка + smoke (линии SM, rom4s, myarena, все патчи)
+.github/workflows/server-files.yml релиз server-css34-4044 (файлы сервера rom4s, сверка sha256)
+.github/workflows/protectcmds.yml  релиз protectcmds-<commit> (сборка на debian:11)
+todo/windows/                      отложенный Windows-установщик (docs/TODO.md)
 ```

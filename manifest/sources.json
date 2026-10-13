@@ -1,5 +1,5 @@
 {
-  "_comment": "Download sources for install.sh / install.ps1. Each file lists URLs in order: our mirror first, then the rom4s fallback. sha256 is checked when set.",
+  "_comment": "Download sources for install.sh (todo/windows/install.ps1 too). Server files: our release first, then the rom4s fallback; sha256 is checked when set.",
   "server": {
     "mirror_release": "https://github.com/fmu1337/v34_server_base/releases/download/server-css34-4044",
     "rom4s": "https://bitbucket.org/rom4s/other.get/downloads",

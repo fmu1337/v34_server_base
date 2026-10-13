@@ -18,6 +18,9 @@
   аргументы как в нативном smoke `sourcemod-css34`, `+sv_lan 1`, `-ip 127.0.0.1`, эмулятор
   RC9.U1 — не помогло. Нужна проверка на живой Windows-машине (нет ли окна/диалога при
   старте).
+- **Манифест:** `install.ps1` берёт файлы сервера из `server.mirror_release` (наш релиз
+  `server-css34-4044`, там же Windows-архивы) и первый закреплённый тег линии SM. Указатели
+  `line-<линия>` в sourcemod-css34 — только Linux, sha256 в `install.ps1` не проверяется.
 - **Metamod/SourceMod:** наши Windows-пакеты для `sm12-latest`, `sm13-*`; у
   `sm13-mm20-khook` Windows-сборка падает (см. sourcemod-css34). У rom4s нет Windows-сборки
   Metamod — берётся наш MM 1.10.7 (`1.11.0.6572-mm1.10.7`). myarena — только Linux.
