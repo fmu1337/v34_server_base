@@ -1,0 +1,43 @@
+name: server-files
+
+# Publishes the CS:S v34 server archives (rom4s, bitbucket.org/rom4s/other.get) as this repo's
+# release `server-css34-4044`, which install.sh downloads first. Every file must match the
+# sha256 pinned in manifest/sources.json.
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/server-files.yml
+
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download + verify
+        run: |
+          mkdir out
+          rom4s="$(jq -r .server.rom4s manifest/sources.json)"
+          jq -r '.server.linux[], .server.windows[] | "\(.name) \(.sha256)"' manifest/sources.json | sort -u |
+          while read -r name sha; do
+            [[ "$sha" =~ ^[0-9a-f]{64}$ ]] || { echo "no sha256 pinned for $name"; exit 1; }
+            curl -fsSL --retry 3 --retry-delay 5 -o "out/$name" "$rom4s/$name"
+            echo "$sha  out/$name" | sha256sum -c -
+          done
+          (cd out && sha256sum -- * | sort -k2 > ../SHA256SUMS) && mv SHA256SUMS out/ && cat out/SHA256SUMS
+      - name: Publish
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          tag="$(jq -r .server.mirror_release manifest/sources.json)"; tag="${tag##*/}"
+          if ! gh release view "$tag" >/dev/null 2>&1; then
+            gh release create "$tag" --target "$GITHUB_SHA" --latest=false --title "CS:S v34 server (build 4044)" \
+              --notes "rom4s CS:S v34 dedicated server archives (bitbucket.org/rom4s/other.get), sha256-checked against manifest/sources.json. Downloaded by install.sh; rom4s is the fallback."
+          fi
+          gh release upload "$tag" out/* --clobber

@@ -20,7 +20,7 @@ sudo ./install.sh --deps-only        # 32-bit библиотеки (apt / dnf), 
 
 | Шаг | По умолчанию | Варианты |
 |-----|--------------|----------|
-| Файлы сервера | релиз [`v34_srcds_server`](https://github.com/fmu1337/v34_srcds_server/releases/tag/css34-4044), при ошибке — bitbucket rom4s | `--server-source auto\|mirror\|rom4s\|skip` |
+| Файлы сервера | релиз [`server-css34-4044`](https://github.com/fmu1337/v34_server_base/releases/tag/server-css34-4044) этого репо (копия rom4s, sha256 закреплены в манифесте), при ошибке — bitbucket rom4s | `--server-source auto\|mirror\|rom4s\|skip` |
 | Патчи | `bufferfix,steamclient` | + `steamdeny`, `lanfix`; `--patch LIST\|all\|none`, `--valve-rc auto\|stock\|debian9\|minimal` |
 | Metamod + SourceMod | наш [`sourcemod-css34`](https://github.com/fmu1337/sourcemod-css34), линия `sm13-latest` | `--sm ours\|rom4s\|myarena\|none`, `--sm-line …` |
 | Плагины | SMAC ([`smac_v34`](https://github.com/fmu1337/smac_v34)) + ProtectCMDS ([`fmu1337/ProtectCMDS`](https://github.com/fmu1337/ProtectCMDS), форк WeSTManCoder) | `--plugins smac,protectcmds\|none`, `--smac-mode auto\|compile\|prebuilt` |
