@@ -16,6 +16,7 @@ CACHE_DIR=""
 SERVER_SOURCE="auto"     # auto | mirror | rom4s | skip
 SM_SOURCE=""             # ours | rom4s | myarena | none   (empty = manifest default)
 SM_LINE=""               # ours only (empty = manifest default)
+SM_PINNED=0              # ours: 1 = skip the line pointer, pinned tags only
 PATCHES="bufferfix,steamclient"
 VALVE_RC="auto"          # auto | stock | debian9 | minimal
 PLUGINS="smac,protectcmds"
@@ -59,6 +60,9 @@ SourceMod + Metamod:
   --sm SRC              ours (default) | rom4s | myarena | none
   --sm-line LINE        for --sm ours: $(manifest_lines | tr '\n' ' ')
                         (default: $(manifest_get sourcemod.ours.default_line))
+                        takes the line's smoke-tested pointer release, else the
+                        pinned tags from manifest/sources.json
+  --sm-pinned           for --sm ours: pinned tags only, skip the line pointer
 
 Plugins:
   --plugins LIST        smac,protectcmds | all | none (default: smac,protectcmds)
@@ -263,6 +267,69 @@ write_sourcemod_vdf() {
 EOF
 }
 
+# sums_get SUMS NAME -> sha256 of NAME in a sha256sum file ("-" when absent)
+sums_get() {
+  [[ -s "$1" ]] && awk -v n="$2" '{ f = $2; sub(/^\*/, "", f) } f == n { print $1; found = 1 } END { if (!found) print "-" }' "$1" || echo -
+}
+
+# Our packages, line pointer: releases/download/line-<line>/ always serves the
+# latest smoke-tested build of the line under fixed names. lines.json names the
+# source tag (cache key); SHA256SUMS also catches a pointer switching mid-download.
+# Prints "mm.tar.gz sm.tar.gz" (cached paths).
+fetch_ours_pointer() {
+  local ptr tmp tag sums mm sm
+  ptr="$(manifest_get sourcemod.ours.release)/$(manifest_get sourcemod.ours.pointer_prefix)${SM_LINE}"
+  tmp="$(mktemp -d)"
+  if ! curl_get "${ptr}/lines.json" "${tmp}/lines.json" 2>/dev/null; then
+    warn "no line pointer ${ptr##*/} yet; using the pinned releases" ; rm -rf "${tmp}"; return 1
+  fi
+  tag="$(python3 -I - "${tmp}/lines.json" "${SM_LINE}" <<'PY2'
+import json, sys
+e = json.load(open(sys.argv[1])).get(sys.argv[2]) or {}
+if e.get("tag") and e.get("smoke") == "pass":
+    print(e["tag"])
+PY2
+)"
+  if [[ -z "${tag}" ]] || ! curl_get "${ptr}/SHA256SUMS" "${tmp}/SHA256SUMS"; then
+    warn "line pointer ${ptr##*/} has no smoke-passed build; using the pinned releases"; rm -rf "${tmp}"; return 1
+  fi
+  sums="${tmp}/SHA256SUMS"
+  mm="${CACHE_DIR}/ours-${tag}-mmsource-css34-linux.tar.gz"
+  sm="${CACHE_DIR}/ours-${tag}-sourcemod-css34-linux.tar.gz"
+  if fetch "${mm}" "$(sums_get "${sums}" mmsource-css34-linux.tar.gz)" "${ptr}/mmsource-css34-linux.tar.gz" >&2 &&
+     fetch "${sm}" "$(sums_get "${sums}" sourcemod-css34-linux.tar.gz)" "${ptr}/sourcemod-css34-linux.tar.gz" >&2; then
+    echo "    ${ptr##*/} -> ${tag}" >&2
+    rm -rf "${tmp}"
+    echo "${mm} ${sm}"
+    return 0
+  fi
+  rm -rf "${tmp}"
+  warn "line pointer ${ptr##*/} did not download; using the pinned releases"
+  return 1
+}
+
+# Our packages, pinned tags from the manifest: the first release whose files download.
+fetch_ours_pinned() {
+  local base tag smn mmn sums mm sm
+  base="$(manifest_get sourcemod.ours.release)"
+  sums="$(mktemp)"
+  while read -r tag smn mmn; do
+    curl_get "${base}/${tag}/SHA256SUMS" "${sums}" 2>/dev/null || : >"${sums}"   # older tags have none
+    mm="${CACHE_DIR}/ours-${tag}-${mmn}-linux.tar.gz"
+    sm="${CACHE_DIR}/ours-${tag}-${smn}-linux.tar.gz"
+    if fetch "${mm}" "$(sums_get "${sums}" "${mmn}-linux.tar.gz")" "${base}/${tag}/${mmn}-linux.tar.gz" >&2 &&
+       fetch "${sm}" "$(sums_get "${sums}" "${smn}-linux.tar.gz")" "${base}/${tag}/${smn}-linux.tar.gz" >&2; then
+      echo "    release ${tag}" >&2
+      rm -f "${sums}"
+      echo "${mm} ${sm}"
+      return 0
+    fi
+    warn "release ${tag} is not downloadable, trying the next one"
+  done < <(manifest_releases "${SM_LINE}")
+  rm -f "${sums}"
+  return 1
+}
+
 install_sourcemod() {
   [[ "${SM_SOURCE}" == none ]] && return 0
   local cs="${DIR}/cstrike" mm_url sm_url
@@ -271,24 +338,17 @@ install_sourcemod() {
 
   case "${SM_SOURCE}" in
     ours)
-      local base tag smn mmn ok=0
-      base="$(manifest_get sourcemod.ours.release)"
       [[ -n "$(manifest_releases "${SM_LINE}")" ]] || die "unknown --sm-line ${SM_LINE}"
-      # First release of the line whose files download (one may be a draft while rebuilt).
-      while read -r tag smn mmn; do
-        mm_url="${base}/${tag}/${mmn}-linux.tar.gz"
-        sm_url="${base}/${tag}/${smn}-linux.tar.gz"
-        if fetch "${CACHE_DIR}/ours-${tag}-${mmn}-linux.tar.gz" - "${mm_url}" &&
-           fetch "${CACHE_DIR}/ours-${tag}-${smn}-linux.tar.gz" - "${sm_url}"; then
-          ok=1
-          echo "    release ${tag}"
-          break
-        fi
-        warn "release ${tag} is not downloadable, trying the next one"
-      done < <(manifest_releases "${SM_LINE}")
-      [[ "${ok}" == 1 ]] || die "no downloadable release for --sm-line ${SM_LINE}"
-      unpack "${CACHE_DIR}/ours-${tag}-${mmn}-linux.tar.gz" "${cs}"
-      unpack "${CACHE_DIR}/ours-${tag}-${smn}-linux.tar.gz" "${cs}"
+      local pkgs
+      if [[ "${SM_PINNED}" == 0 ]] && pkgs="$(fetch_ours_pointer)"; then
+        :
+      else
+        pkgs="$(fetch_ours_pinned)" || die "no downloadable release for --sm-line ${SM_LINE}"
+      fi
+      local mm_pkg sm_pkg
+      read -r mm_pkg sm_pkg <<<"${pkgs}"
+      unpack "${mm_pkg}" "${cs}"
+      unpack "${sm_pkg}" "${cs}"
       mm_url=""   # already unpacked
       ;;
     rom4s)
@@ -322,7 +382,8 @@ install_sourcemod() {
   [[ -f "${cs}/addons/metamod.vdf" ]] || die "metamod.vdf missing after install"
   [[ -d "${cs}/addons/sourcemod/bin" ]] || die "SourceMod missing after install"
   write_sourcemod_vdf
-  sed -i 's/"AutoUpdate"[[:space:]]*"yes"/"AutoUpdate"\t\t"no"/' "${cs}/addons/sourcemod/configs/core.cfg" 2>/dev/null || true
+  # SourceMod's updater switch is "DisableAutoUpdate" (our packages already ship "yes").
+  sed -i 's/"DisableAutoUpdate"\([[:space:]]*\)"no"/"DisableAutoUpdate"\1"yes"/' "${cs}/addons/sourcemod/configs/core.cfg" 2>/dev/null || true
   find "${cs}/addons" -name '*.so' -exec chmod +x {} + 2>/dev/null || true
   chmod +x "${cs}/addons/sourcemod/scripting/spcomp"* 2>/dev/null || true
 
@@ -380,9 +441,16 @@ install_protectcmds() {
   local sm="${DIR}/cstrike/addons/sourcemod" src="${ROOT}/extras/protectcmds"
   [[ -d "${sm}" ]] || { warn "ProtectCMDS needs SourceMod; skipped"; return 0; }
   log "ProtectCMDS"
-  # SourceMod 1.13 only loads extension API >= 9, 1.11/1.12 only <= 8.
-  local api=api7 url
-  if grep -aqE '1\.1[3-9]\.0\.[0-9]' "${sm}/bin/sourcemod.logic.so" 2>/dev/null; then
+  # SourceMod 1.13 only loads extension API >= 9, 1.11/1.12 only <= 8. Our packages
+  # say what they accept in css34-package.json; others: guess from the version string.
+  local api=api7 url range lo hi
+  if [[ -f "${sm}/css34-package.json" ]]; then
+    range="$(python3 -I -c 'import json,sys; m=json.load(open(sys.argv[1])); print(m.get("extension_api_min", 1), m["extension_api"])' "${sm}/css34-package.json")"
+    read -r lo hi <<<"${range}"
+    if (( lo <= 9 && 9 <= hi )); then api=api9
+    elif (( lo <= 7 && 7 <= hi )); then api=api7
+    else die "no ProtectCMDS build for extension API ${lo}..${hi}"; fi
+  elif grep -aqE '1\.1[3-9]\.0\.[0-9]' "${sm}/bin/sourcemod.logic.so" 2>/dev/null; then
     api=api9
   fi
   url="$(manifest_get "plugins.protectcmds.ext_${api}")"
@@ -492,6 +560,7 @@ while [[ $# -gt 0 ]]; do
     --server-source) SERVER_SOURCE="$2"; shift 2 ;;
     --sm) SM_SOURCE="$2"; shift 2 ;;
     --sm-line) SM_LINE="$2"; shift 2 ;;
+    --sm-pinned) SM_PINNED=1; shift ;;
     --patch|--patches) PATCHES="$2"; shift 2 ;;
     --valve-rc) VALVE_RC="$2"; shift 2 ;;
     --plugins) PLUGINS="$2"; shift 2 ;;

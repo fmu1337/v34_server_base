@@ -44,20 +44,6 @@
               "tag": "1.13.0.7472-mm1.12.0",
               "sm": "sourcemod-1.13.0-git7472-css34",
               "mm": "mmsource-1.12.0-dev-css34"
-            },
-            {
-              "tag": "1.13.0.7394-mm1.12.0",
-              "sm": "sourcemod-1.13.0-git7394-css34",
-              "mm": "mmsource-1.12.0-dev-css34"
-            }
-          ]
-        },
-        "sm13-dev": {
-          "releases": [
-            {
-              "tag": "1.13.0.7404-mm1.12.0",
-              "sm": "sourcemod-1.13.0-git7404-css34",
-              "mm": "mmsource-1.12.0-dev-css34"
             }
           ]
         },
@@ -72,11 +58,15 @@
               "tag": "1.12.0.7245-mm1.12.0",
               "sm": "sourcemod-1.12.0-git7245-css34",
               "mm": "mmsource-1.12.0-dev-css34"
-            },
+            }
+          ]
+        },
+        "sm13-mm20": {
+          "releases": [
             {
-              "tag": "1.12.0.7239-mm1.12.0",
-              "sm": "sourcemod-1.12.0-git7239-css34",
-              "mm": "mmsource-1.12.0-dev-css34"
+              "tag": "1.13.0.7404-mm2.0.0",
+              "sm": "sourcemod-1.13.0-git7404-css34",
+              "mm": "mmsource-2.0.0-dev-css34"
             }
           ]
         },
@@ -90,7 +80,8 @@
           ]
         }
       },
-      "_comment": "Each line lists releases in order of preference; install.sh takes the first one whose files download (a release can be a draft while it is being rebuilt)."
+      "_comment": "install.sh first takes the line pointer release line-<line> (smoke-tested build, fixed asset names sourcemod-css34-linux.tar.gz / mmsource-css34-linux.tar.gz, lines.json, SHA256SUMS); if it is missing or fails, the pinned releases below in order. 1.13.0.7394 is left out: its package has no SDKHooks gamedata for css34.",
+      "pointer_prefix": "line-"
     },
     "rom4s": {
       "_comment": "rom4s drop: Metamod 1.10.6 + SourceMod 1.11.0.6572",

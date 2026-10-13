@@ -19,7 +19,9 @@ jobs:
       matrix:
         include:
           - { name: ours sm13-latest, args: "--sm ours --sm-line sm13-latest" }
+          - { name: ours sm13-latest pinned, args: "--sm ours --sm-line sm13-latest --sm-pinned" }
           - { name: ours sm12-latest, args: "--sm ours --sm-line sm12-latest" }
+          - { name: ours sm13-mm20, args: "--sm ours --sm-line sm13-mm20" }
           - { name: rom4s, args: "--sm rom4s" }
           - { name: myarena, args: "--sm myarena" }
           - { name: all patches, args: "--sm ours --patch all" }
