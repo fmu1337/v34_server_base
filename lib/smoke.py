@@ -89,6 +89,8 @@ def main() -> int:
     ap.add_argument("--sm", default="ours")
     ap.add_argument("--expect-plugin", action="append", default=[])
     ap.add_argument("--expect-ext", action="append", default=[])
+    ap.add_argument("--expect-meta", action="append", default=[],
+                    help="text `meta version` must contain (repeatable), e.g. 'version 1.10.7-dev'")
     ap.add_argument("--port", type=int, default=27115)
     ap.add_argument("--boot-secs", type=int, default=120)
     ap.add_argument("--map", default="de_dust2")
@@ -160,6 +162,10 @@ def main() -> int:
                 print(f"] {c}\n{out}")
                 if c == "meta version" and "Metamod:Source" not in out:
                     failures.append("Metamod not loaded")
+                elif c == "meta version":
+                    for text in args.expect_meta:
+                        if text not in out:
+                            failures.append(f"meta version does not report {text!r}")
                 if c == "sm version" and "SourceMod" not in out:
                     failures.append("SourceMod not loaded")
                 if c == "sm exts list":

@@ -17,6 +17,7 @@ SERVER_SOURCE="auto"     # auto | mirror | rom4s | skip
 SM_SOURCE=""             # ours | rom4s | myarena | none   (empty = manifest default)
 SM_LINE=""               # ours only (empty = manifest default)
 SM_PINNED=0              # ours: 1 = skip the line pointer, pinned tags only
+METAMOD="default"        # ours: default | legacy (lines with a legacy Metamod build)
 PATCHES="bufferfix,steamclient"
 VALVE_RC="auto"          # auto | stock | debian9 | minimal
 PLUGINS="smac,protectcmds"
@@ -63,6 +64,12 @@ SourceMod + Metamod:
                         takes the line's smoke-tested pointer release, else the
                         pinned tags from manifest/sources.json
   --sm-pinned           for --sm ours: pinned tags only, skip the line pointer
+  --metamod MM          for --sm ours: default | legacy (default: default)
+                        legacy = the line's older Metamod build; only
+                        sm11-oldstable has one: MM 1.10.7 (metamod.1.ep1,
+                        SourceMod's 1.ep1 core, no DHooks) instead of MM 1.12
+                        (metamod.2.ep1 + DHooks; old PLAPI 7-12 Metamod
+                        plugins still load through its legacy bridge)
 
 Plugins:
   --plugins LIST        smac,protectcmds | all | none (default: smac,protectcmds)
@@ -107,14 +114,20 @@ print(v if not isinstance(v, bool) else str(v).lower())
 PY
 }
 
-# manifest_releases LINE -> "tag sm mm" lines in order of preference
+# manifest_releases LINE -> "tag sm mm mm_legacy" lines in order of preference
+# (mm_legacy is "-" when the release has no legacy Metamod build)
 manifest_releases() {
   python3 -I - "${MANIFEST}" "$1" <<'PY'
 import json, sys
 line = json.load(open(sys.argv[1]))["sourcemod"]["ours"]["lines"].get(sys.argv[2])
 for r in (line or {}).get("releases", []):
-    print(r["tag"], r["sm"], r["mm"])
+    print(r["tag"], r["sm"], r["mm"], r.get("mm_legacy") or "-")
 PY
+}
+
+# line_has_legacy_mm LINE -> success when a pinned release of LINE has mm_legacy
+line_has_legacy_mm() {
+  manifest_releases "$1" | awk '$4 != "-" { found = 1 } END { exit !found }'
 }
 
 manifest_lines() {
@@ -277,16 +290,19 @@ sums_get() {
 # source tag (cache key); SHA256SUMS also catches a pointer switching mid-download.
 # Prints "mm.tar.gz sm.tar.gz" (cached paths).
 fetch_ours_pointer() {
-  local ptr tmp tag sums mm sm
+  local ptr tmp tag sums mm sm mm_asset=mmsource-css34-linux.tar.gz mm_key=mmsource_url
+  if [[ "${METAMOD}" == legacy ]]; then
+    mm_asset=mmsource-legacy-css34-linux.tar.gz; mm_key=mmsource_legacy_url
+  fi
   ptr="$(manifest_get sourcemod.ours.release)/$(manifest_get sourcemod.ours.pointer_prefix)${SM_LINE}"
   tmp="$(mktemp -d)"
   if ! curl_get "${ptr}/lines.json" "${tmp}/lines.json" 2>/dev/null; then
     warn "no line pointer ${ptr##*/} yet; using the pinned releases" ; rm -rf "${tmp}"; return 1
   fi
-  tag="$(python3 -I - "${tmp}/lines.json" "${SM_LINE}" <<'PY2'
+  tag="$(python3 -I - "${tmp}/lines.json" "${SM_LINE}" "${mm_key}" <<'PY2'
 import json, sys
 e = json.load(open(sys.argv[1])).get(sys.argv[2]) or {}
-if e.get("tag") and e.get("smoke") == "pass":
+if e.get("tag") and e.get("smoke") == "pass" and e.get(sys.argv[3]):
     print(e["tag"])
 PY2
 )"
@@ -294,9 +310,9 @@ PY2
     warn "line pointer ${ptr##*/} has no smoke-passed build; using the pinned releases"; rm -rf "${tmp}"; return 1
   fi
   sums="${tmp}/SHA256SUMS"
-  mm="${CACHE_DIR}/ours-${tag}-mmsource-css34-linux.tar.gz"
+  mm="${CACHE_DIR}/ours-${tag}-${mm_asset}"
   sm="${CACHE_DIR}/ours-${tag}-sourcemod-css34-linux.tar.gz"
-  if fetch "${mm}" "$(sums_get "${sums}" mmsource-css34-linux.tar.gz)" "${ptr}/mmsource-css34-linux.tar.gz" >&2 &&
+  if fetch "${mm}" "$(sums_get "${sums}" "${mm_asset}")" "${ptr}/${mm_asset}" >&2 &&
      fetch "${sm}" "$(sums_get "${sums}" sourcemod-css34-linux.tar.gz)" "${ptr}/sourcemod-css34-linux.tar.gz" >&2; then
     echo "    ${ptr##*/} -> ${tag}" >&2
     rm -rf "${tmp}"
@@ -310,10 +326,14 @@ PY2
 
 # Our packages, pinned tags from the manifest: the first release whose files download.
 fetch_ours_pinned() {
-  local base tag smn mmn sums mm sm
+  local base tag smn mmn mml sums mm sm
   base="$(manifest_get sourcemod.ours.release)"
   sums="$(mktemp)"
-  while read -r tag smn mmn; do
+  while read -r tag smn mmn mml; do
+    if [[ "${METAMOD}" == legacy ]]; then
+      [[ "${mml}" == - ]] && continue
+      mmn="${mml}"
+    fi
     curl_get "${base}/${tag}/SHA256SUMS" "${sums}" 2>/dev/null || : >"${sums}"   # older tags have none
     mm="${CACHE_DIR}/ours-${tag}-${mmn}-linux.tar.gz"
     sm="${CACHE_DIR}/ours-${tag}-${smn}-linux.tar.gz"
@@ -330,10 +350,28 @@ fetch_ours_pinned() {
   return 1
 }
 
+# Our Metamod packages describe themselves in css34-package.json; --metamod
+# legacy must get a metamod.1.ep1 build. Prints the version for the log.
+check_ours_metamod() {
+  [[ -f "$1" ]] || { warn "Metamod package has no css34-package.json"; return 0; }   # older tags
+  local got
+  got="$(python3 -I - "$1" "${METAMOD}" <<'PY'
+import json, sys
+m = json.load(open(sys.argv[1]))
+binary = m.get("metamod_binary", "")
+if sys.argv[2] == "legacy" and binary != "metamod.1.ep1":
+    sys.exit("--metamod legacy got a %s build" % (binary or "unknown"))
+print("Metamod %s (%s%s)" % (m.get("mm_version", "?"), binary or "?",
+      ", legacy plugin bridge" if m.get("legacy_bridge") else ""))
+PY
+)" || die "unexpected Metamod package"
+  echo "    ${got}"
+}
+
 install_sourcemod() {
   [[ "${SM_SOURCE}" == none ]] && return 0
   local cs="${DIR}/cstrike" mm_url sm_url
-  log "Metamod + SourceMod: ${SM_SOURCE}${SM_LINE:+ (${SM_LINE})}"
+  log "Metamod + SourceMod: ${SM_SOURCE}${SM_LINE:+ (${SM_LINE}, Metamod ${METAMOD})}"
   rm -rf "${cs}/addons/metamod" "${cs}/addons/metamod.vdf" "${cs}/addons/sourcemod"
 
   case "${SM_SOURCE}" in
@@ -350,6 +388,7 @@ install_sourcemod() {
       unpack "${mm_pkg}" "${cs}"
       unpack "${sm_pkg}" "${cs}"
       mm_url=""   # already unpacked
+      check_ours_metamod "${cs}/addons/metamod/css34-package.json"
       ;;
     rom4s)
       mm_url="$(manifest_get sourcemod.rom4s.linux.mm)"
@@ -430,8 +469,11 @@ install_smac() {
   fi
 
   cp -a "${src}/addons/sourcemod/." "${sm}/"
-  mkdir -p "${DIR}/cstrike/cfg"
-  cp -a "${src}/cfg/." "${DIR}/cstrike/cfg/"
+  # smac_v34 no longer ships cfg/ (the plugins write cfg/sourcemod/smac*.cfg themselves)
+  if [[ -d "${src}/cfg" ]]; then
+    mkdir -p "${DIR}/cstrike/cfg"
+    cp -a "${src}/cfg/." "${DIR}/cstrike/cfg/"
+  fi
   [[ -d "${src}/materials" ]] && cp -a "${src}/materials" "${DIR}/cstrike/"
   rm -rf "${tmp}"
   echo "    $(ls "${sm}/plugins"/smac*.smx | wc -l) SMAC plugins (compiled=${compiled})"
@@ -519,6 +561,7 @@ installer=$(git -C "${ROOT}" rev-parse --short HEAD 2>/dev/null || echo unknown)
 server_source=${SERVER_SOURCE}
 sm=${SM_SOURCE}
 sm_line=${SM_LINE}
+metamod=${METAMOD}
 patches=${PATCHES}
 valve_rc=${VALVE_RC}
 plugins=${PLUGINS}
@@ -527,8 +570,16 @@ EOF
 
 smoke() {
   log "Smoke test"
+  # Our Metamod packages say what `meta version` must print: the product version
+  # (1.12.0-dev) and the commit it was built from (first 7 hex digits). The
+  # "+<rev>" build number is not checked: archived MM 2.0 builds print +1.
+  local meta=() m pkg="${DIR}/cstrike/addons/metamod/css34-package.json"
+  if [[ "${SM_SOURCE}" == ours && -f "${pkg}" ]]; then
+    while read -r m; do meta+=(--expect-meta "${m}"); done < <(python3 -I -c \
+      'import json, sys; m = json.load(open(sys.argv[1])); print("version " + m["mm_product_version"]); print(m["mm_commit"][:7])' "${pkg}")
+  fi
   python3 -I "${ROOT}/lib/smoke.py" "${DIR}" \
-    --sm "${SM_SOURCE}" \
+    --sm "${SM_SOURCE}" ${meta[@]+"${meta[@]}"} \
     $(has_item "${PLUGINS}" smac && echo --expect-plugin smac) \
     $(has_item "${PLUGINS}" protectcmds && echo --expect-ext ProtectCMDS --expect-plugin ProtectCMDS:status/ping)
 }
@@ -543,6 +594,9 @@ interactive() {
   if [[ "${SM_SOURCE}" == ours ]]; then
     lines="$(manifest_lines | tr '\n' ' ')"
     SM_LINE="$(ask "SourceMod line (${lines% })" "${SM_LINE}")"
+    if line_has_legacy_mm "${SM_LINE}"; then
+      METAMOD="$(ask "Metamod: default (MM 1.12 + DHooks) | legacy (MM 1.10.7, 1.ep1 core)" "${METAMOD}")"
+    fi
   fi
   PATCHES="$(ask "Patches (bufferfix,steamclient,steamdeny,lanfix | all | none)" "${PATCHES}")"
   VALVE_RC="$(ask "valve.rc: auto | stock | debian9 | minimal" "${VALVE_RC}")"
@@ -561,6 +615,7 @@ while [[ $# -gt 0 ]]; do
     --sm) SM_SOURCE="$2"; shift 2 ;;
     --sm-line) SM_LINE="$2"; shift 2 ;;
     --sm-pinned) SM_PINNED=1; shift ;;
+    --metamod) METAMOD="$2"; shift 2 ;;
     --patch|--patches) PATCHES="$2"; shift 2 ;;
     --valve-rc) VALVE_RC="$2"; shift 2 ;;
     --plugins) PLUGINS="$2"; shift 2 ;;
@@ -589,6 +644,11 @@ if [[ "${ARGC}" -eq 0 && "${ASSUME_YES}" == 0 && -t 0 ]]; then
   interactive
 fi
 [[ "${SM_SOURCE}" == ours ]] || SM_LINE=""
+case "${METAMOD}" in default|legacy) ;; *) die "unknown --metamod ${METAMOD} (default | legacy)" ;; esac
+[[ "${METAMOD}" == default || "${SM_SOURCE}" == ours ]] || die "--metamod legacy needs --sm ours"
+if [[ "${METAMOD}" == legacy ]] && ! line_has_legacy_mm "${SM_LINE}"; then
+  die "--metamod legacy: line ${SM_LINE} has no legacy Metamod build (only sm11-oldstable has one)"
+fi
 
 PATCHES="$(normalize_list "${PATCHES}" "${ALL_PATCHES}")"
 PLUGINS="$(normalize_list "${PLUGINS}" "${ALL_PLUGINS}")"
@@ -604,7 +664,7 @@ CACHE_DIR="${CACHE_DIR:-${DIR}/.cache}"
 mkdir -p "${CACHE_DIR}"
 
 log "Install to ${DIR}"
-echo "    server=${SERVER_SOURCE} sm=${SM_SOURCE}${SM_LINE:+/${SM_LINE}} patches=${PATCHES:-none} valve.rc=${VALVE_RC} plugins=${PLUGINS:-none}"
+echo "    server=${SERVER_SOURCE} sm=${SM_SOURCE}${SM_LINE:+/${SM_LINE} metamod=${METAMOD}} patches=${PATCHES:-none} valve.rc=${VALVE_RC} plugins=${PLUGINS:-none}"
 
 if [[ "${SERVER_SOURCE}" == skip ]]; then
   [[ -f "${DIR}/cstrike/bin/server_i486.so" ]] || die "--server-source skip: no server in ${DIR}"
