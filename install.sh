@@ -469,8 +469,11 @@ install_smac() {
   fi
 
   cp -a "${src}/addons/sourcemod/." "${sm}/"
-  mkdir -p "${DIR}/cstrike/cfg"
-  cp -a "${src}/cfg/." "${DIR}/cstrike/cfg/"
+  # smac_v34 no longer ships cfg/ (the plugins write cfg/sourcemod/smac*.cfg themselves)
+  if [[ -d "${src}/cfg" ]]; then
+    mkdir -p "${DIR}/cstrike/cfg"
+    cp -a "${src}/cfg/." "${DIR}/cstrike/cfg/"
+  fi
   [[ -d "${src}/materials" ]] && cp -a "${src}/materials" "${DIR}/cstrike/"
   rm -rf "${tmp}"
   echo "    $(ls "${sm}/plugins"/smac*.smx | wc -l) SMAC plugins (compiled=${compiled})"
