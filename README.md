@@ -96,7 +96,7 @@ workflow `protectcmds`) и лежит в релизе
 
 - `--smoke` — после установки поднять сервер и проверить по RCON `meta version`,
   `sm version`, `sm exts list`, `sm plugins list`; для наших пакетов `meta version` должен
-  показать версию из `css34-package.json` пакета Metamod (например `1.10.7-dev+976`);
+  показать версию и коммит из `css34-package.json` пакета Metamod (например `1.10.7-dev` и `80e8ff0`);
 - `--server-source skip` — доустановить / переустановить SM, патчи и плагины в уже
   существующий сервер;
 - `--cache DIR` — общий кэш загрузок (ключ — тег/имя файла; файлы с sha256 в манифесте

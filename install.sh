@@ -570,10 +570,13 @@ EOF
 
 smoke() {
   log "Smoke test"
-  # Our Metamod packages say what `meta version` must print (1.12.0-dev+1227).
-  local meta=() pkg="${DIR}/cstrike/addons/metamod/css34-package.json"
+  # Our Metamod packages say what `meta version` must print: the product version
+  # (1.12.0-dev) and the commit it was built from (first 7 hex digits). The
+  # "+<rev>" build number is not checked: archived MM 2.0 builds print +1.
+  local meta=() m pkg="${DIR}/cstrike/addons/metamod/css34-package.json"
   if [[ "${SM_SOURCE}" == ours && -f "${pkg}" ]]; then
-    meta=(--expect-meta "$(python3 -I -c 'import json, sys; m = json.load(open(sys.argv[1])); print("%s+%s" % (m["mm_product_version"], m["mm_version"].rsplit("-git", 1)[1]))' "${pkg}")")
+    while read -r m; do meta+=(--expect-meta "${m}"); done < <(python3 -I -c \
+      'import json, sys; m = json.load(open(sys.argv[1])); print("version " + m["mm_product_version"]); print(m["mm_commit"][:7])' "${pkg}")
   fi
   python3 -I "${ROOT}/lib/smoke.py" "${DIR}" \
     --sm "${SM_SOURCE}" ${meta[@]+"${meta[@]}"} \
