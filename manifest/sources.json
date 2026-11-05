@@ -41,28 +41,18 @@
         "sm13-latest": {
           "releases": [
             {
-              "tag": "1.13.0.7478-mm1.12.0",
+              "tag": "1.13.0.7478-mm1.12.0-r7",
               "sm": "sourcemod-1.13.0-git7478-css34",
-              "mm": "mmsource-1.12.0-git1228-css34"
-            },
-            {
-              "tag": "1.13.0.7472-mm1.12.0",
-              "sm": "sourcemod-1.13.0-git7472-css34",
-              "mm": "mmsource-1.12.0-dev-css34"
+              "mm": "mmsource-1.12.0-git1229-css34"
             }
           ]
         },
         "sm12-latest": {
           "releases": [
             {
-              "tag": "1.12.0.7257-mm1.12.0",
+              "tag": "1.12.0.7257-mm1.12.0-r6",
               "sm": "sourcemod-1.12.0-git7257-css34",
-              "mm": "mmsource-1.12.0-git1228-css34"
-            },
-            {
-              "tag": "1.12.0.7253-mm1.12.0",
-              "sm": "sourcemod-1.12.0-git7253-css34",
-              "mm": "mmsource-1.12.0-dev-css34"
+              "mm": "mmsource-1.12.0-git1229-css34"
             }
           ]
         },
@@ -88,18 +78,18 @@
         "sm13-mm20": {
           "releases": [
             {
-              "tag": "1.13.0.7404-mm2.0.0",
+              "tag": "1.13.0.7404-mm2.0.0-r2",
               "sm": "sourcemod-1.13.0-git7404-css34",
-              "mm": "mmsource-2.0.0-dev-css34"
+              "mm": "mmsource-2.0.0-git1407-css34"
             }
           ]
         },
         "sm13-mm20-khook": {
           "releases": [
             {
-              "tag": "1.13.0.7565-mm2.0.0-khook-dhooks",
+              "tag": "1.13.0.7565-mm2.0.0-khook-dhooks-r2",
               "sm": "sourcemod-1.13.0-git7565-css34",
-              "mm": "mmsource-2.0.0-dev-css34"
+              "mm": "mmsource-2.0.0-git1472-css34"
             }
           ]
         }
