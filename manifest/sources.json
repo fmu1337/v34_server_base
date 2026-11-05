@@ -75,6 +75,14 @@
               "mm": "mmsource-1.12.0-git1227-css34",
               "mm_legacy": "mmsource-1.10.7-git976-css34"
             }
+          ],
+          "hotfixes": [
+            {
+              "_comment": "HintTextPreByte for the v34 client (PrintHintText, sm_hsay): the frozen 1.11 package lacks it; a SourceMod gamedata override from sourcemod-css34 hotfixes/sm11-oldstable/ (#181)",
+              "path": "addons/sourcemod/gamedata/core.games/custom/css34-hinttext-prebyte.txt",
+              "url": "https://raw.githubusercontent.com/fmu1337/sourcemod-css34/2f3af49840cf721b40c53953541af2edbd93fd83/hotfixes/sm11-oldstable/addons/sourcemod/gamedata/core.games/custom/css34-hinttext-prebyte.txt",
+              "sha256": "ed0bc428ecb4a1464f5ae52db5e6bfa408814b7339cc95e4adfec65a0eff091f"
+            }
           ]
         },
         "sm13-mm20": {
@@ -96,7 +104,7 @@
           ]
         }
       },
-      "_comment": "install.sh first takes the line pointer release line-<line> (smoke-tested build, fixed asset names sourcemod-css34-linux.tar.gz / mmsource-css34-linux.tar.gz, plus mmsource-legacy-css34-linux.tar.gz on sm11-oldstable, lines.json, SHA256SUMS); if it is missing or fails, the pinned releases below in order. 'mm_legacy' is the --metamod legacy package of a release. 1.13.0.7394 is left out: its package has no SDKHooks gamedata for css34; 1.12.0.7245 is superseded by 7253/7257.",
+      "_comment": "install.sh first takes the line pointer release line-<line> (smoke-tested build, fixed asset names sourcemod-css34-linux.tar.gz / mmsource-css34-linux.tar.gz, plus mmsource-legacy-css34-linux.tar.gz on sm11-oldstable, lines.json, SHA256SUMS); if it is missing or fails, the pinned releases below in order. 'mm_legacy' is the --metamod legacy package of a release. 'hotfixes' are files a line's packages lack, laid over cstrike/ after them (sha256 required). 1.13.0.7394 is left out: its package has no SDKHooks gamedata for css34; 1.12.0.7245 is superseded by 7253/7257.",
       "pointer_prefix": "line-"
     },
     "rom4s": {

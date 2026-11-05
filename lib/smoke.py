@@ -4,7 +4,7 @@
 Talks to the server over Source RCON (TCP), so no expect/pty is needed.
 Exit code 0 = everything loaded; the console log tail is printed on failure.
 
-Usage: smoke.py SERVER_DIR [--sm none] [--expect-plugin NAME ...]
+Usage: smoke.py SERVER_DIR [--sm none] [--expect-plugin NAME ...] [--expect-console TEXT ...]
 """
 from __future__ import annotations
 
@@ -91,6 +91,8 @@ def main() -> int:
     ap.add_argument("--expect-ext", action="append", default=[])
     ap.add_argument("--expect-meta", action="append", default=[],
                     help="text `meta version` must contain (repeatable), e.g. 'version 1.10.7-dev'")
+    ap.add_argument("--expect-console", action="append", default=[],
+                    help="text console.log must contain (repeatable), e.g. a SourceMod gamedata override line")
     ap.add_argument("--port", type=int, default=27115)
     ap.add_argument("--boot-secs", type=int, default=120)
     ap.add_argument("--map", default="de_dust2")
@@ -198,6 +200,9 @@ def main() -> int:
         failures.append("console flooded with 'Unknown command' (buffer bug; use --patch bufferfix)")
     if "Segmentation fault" in log:
         failures.append("segfault")
+    for text in args.expect_console:
+        if text not in log:
+            failures.append(f"console.log does not contain {text!r}")
 
     if failures:
         if windows:

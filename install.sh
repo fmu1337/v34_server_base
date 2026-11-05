@@ -125,6 +125,17 @@ for r in (line or {}).get("releases", []):
 PY
 }
 
+# manifest_hotfixes LINE -> "path sha256 url" lines: files the line's packages lack,
+# laid over cstrike/ after them (sourcemod-css34 hotfixes/<line>/)
+manifest_hotfixes() {
+  python3 -I - "${MANIFEST}" "$1" <<'PY'
+import json, sys
+line = json.load(open(sys.argv[1]))["sourcemod"]["ours"]["lines"].get(sys.argv[2]) or {}
+for h in line.get("hotfixes", []):
+    print(h["path"], h["sha256"], h["url"])
+PY
+}
+
 # line_has_legacy_mm LINE -> success when a pinned release of LINE has mm_legacy
 line_has_legacy_mm() {
   manifest_releases "$1" | awk '$4 != "-" { found = 1 } END { exit !found }'
@@ -368,6 +379,21 @@ PY
   echo "    ${got}"
 }
 
+# Hotfixes of our line: SourceMod gamedata overrides (gamedata/<name>.games/custom/*.txt,
+# read after the shipped files) for a frozen line whose packages stay as published.
+install_ours_hotfixes() {
+  local cs="${DIR}/cstrike" path sha url cached
+  while read -r path sha url; do
+    [[ "${path}" == addons/sourcemod/gamedata/*.games/custom/*.txt && "${path}" != *..* ]] ||
+      die "unexpected hotfix path ${path}"
+    [[ "${sha}" =~ ^[0-9a-f]{64}$ ]] || die "hotfix ${path##*/} has no sha256"
+    cached="${CACHE_DIR}/hotfix-${sha:0:12}-${path##*/}"
+    fetch "${cached}" "${sha}" "${url}" || die "could not download hotfix ${path##*/}"
+    install -D -m 644 "${cached}" "${cs}/${path}"
+    echo "    hotfix ${path#addons/sourcemod/}"
+  done < <(manifest_hotfixes "${SM_LINE}")
+}
+
 install_sourcemod() {
   [[ "${SM_SOURCE}" == none ]] && return 0
   local cs="${DIR}/cstrike" mm_url sm_url
@@ -389,6 +415,7 @@ install_sourcemod() {
       unpack "${sm_pkg}" "${cs}"
       mm_url=""   # already unpacked
       check_ours_metamod "${cs}/addons/metamod/css34-package.json"
+      install_ours_hotfixes
       ;;
     rom4s)
       mm_url="$(manifest_get sourcemod.rom4s.linux.mm)"
@@ -578,8 +605,15 @@ smoke() {
     while read -r m; do meta+=(--expect-meta "${m}"); done < <(python3 -I -c \
       'import json, sys; m = json.load(open(sys.argv[1])); print("version " + m["mm_product_version"]); print(m["mm_commit"][:7])' "${pkg}")
   fi
+  # SourceMod logs every gamedata override it parses.
+  local hotfix=() path _
+  if [[ "${SM_SOURCE}" == ours ]]; then
+    while read -r path _; do
+      hotfix+=(--expect-console "Parsed custom gamedata override file: ${path#addons/sourcemod/gamedata/}")
+    done < <(manifest_hotfixes "${SM_LINE}")
+  fi
   python3 -I "${ROOT}/lib/smoke.py" "${DIR}" \
-    --sm "${SM_SOURCE}" ${meta[@]+"${meta[@]}"} \
+    --sm "${SM_SOURCE}" ${meta[@]+"${meta[@]}"} ${hotfix[@]+"${hotfix[@]}"} \
     $(has_item "${PLUGINS}" smac && echo --expect-plugin smac) \
     $(has_item "${PLUGINS}" protectcmds && echo --expect-ext ProtectCMDS --expect-plugin ProtectCMDS:status/ping)
 }

@@ -63,6 +63,15 @@ supported»), `1.12.0.7245` (заменён 7253/7257), `sm13-dev`, а такж�
 `legacy` нужен только для расширений SourceMod, собранных лишь под `.1.ep1`. `--metamod legacy`
 есть только у `sm11-oldstable`; у остальных линий установщик откажет.
 
+Линия `sm11-oldstable` заморожена, её пакеты не пересобираются. Чего в них не хватает,
+установщик докладывает поверх пакетов: это список `hotfixes` линии в `manifest/sources.json`
+(ссылка на коммит sourcemod-css34 и sha256 каждого файла). Сейчас там один файл —
+`gamedata/core.games/custom/css34-hinttext-prebyte.txt` с `"HintTextPreByte" "yes"`: без
+него клиент v34 не показывает `PrintHintText` и `sm_hsay`. SourceMod читает
+`gamedata/<имя>.games/custom/*.txt` после штатных файлов, для обоих Metamod. `--smoke`
+проверяет, что в `console.log` есть `[SM] Parsed custom gamedata override file: …` для
+каждого такого файла.
+
 MM и SM всегда ставятся парой из одного источника. Обновления SM выключены
 (`"DisableAutoUpdate" "yes"` в `core.cfg`). Для SM 1.12+ без GeoIP2 в пакете установщик
 докладывает `GeoLite2-Country.mmdb` (без неё не грузится `geoip.ext`, а за ним SMAC); новые наши
@@ -96,7 +105,8 @@ workflow `protectcmds`) и лежит в релизе
 
 - `--smoke` — после установки поднять сервер и проверить по RCON `meta version`,
   `sm version`, `sm exts list`, `sm plugins list`; для наших пакетов `meta version` должен
-  показать версию и коммит из `css34-package.json` пакета Metamod (например `1.10.7-dev` и `80e8ff0`);
+  показать версию и коммит из `css34-package.json` пакета Metamod (например `1.10.7-dev` и `80e8ff0`),
+  а `console.log` — строку о каждом hotfix-файле линии;
 - `--server-source skip` — доустановить / переустановить SM, патчи и плагины в уже
   существующий сервер;
 - `--cache DIR` — общий кэш загрузок (ключ — тег/имя файла; файлы с sha256 в манифесте
