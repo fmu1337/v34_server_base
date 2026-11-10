@@ -111,8 +111,7 @@ def main() -> int:
     password = secrets.token_hex(8)
     env = dict(os.environ, LD_LIBRARY_PATH=f".:bin:{os.environ.get('LD_LIBRARY_PATH', '')}")
     if windows:
-        # Same argument set as the native Windows smoke in sourcemod-css34;
-        # -nomaster/-localcser keep srcds.exe stuck right after "Network:".
+        # -nomaster/-localcser hang srcds.exe after "Network:"
         cmd = [str(root / binary), "-console", "-condebug", "-game", "cstrike",
                "-insecure", "-nohltv", "-ip", "127.0.0.1", "-port", str(args.port),
                "+sv_lan", "1", "+maxplayers", "10", "+rcon_password", password, "+ip", "127.0.0.1",
@@ -127,8 +126,7 @@ def main() -> int:
         ]
     print("boot:", " ".join(c if c != password else "***" for c in cmd))
     if windows:
-        # srcds.exe needs a real console: with a pipe on stdin it spins on
-        # "CTextConsoleWin32::GetLine" and never loads the map.
+        # srcds.exe spins on a piped stdin; give it a console
         proc = subprocess.Popen(cmd, cwd=root, env=env,
                                 creationflags=subprocess.CREATE_NEW_CONSOLE)
     else:

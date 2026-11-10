@@ -1,50 +1,19 @@
 #!/usr/bin/env python3
 """
-Binary patches for the CS:S v34 Linux dedicated server (ELF32, i386).
+Binary patches for the CS:S v34 Linux server (ELF32). See docs/PATCHES.md.
 
-Patches (pick with --only, default: bufferfix,steamclient):
+  bufferfix    engine_*.so, server_i486.so: memcpy -> memmove
+  steamclient  steamclient_i486.so: mute "Implement me!" asserts
+  steamdeny    engine_*.so: don't kick on some Steam deny reasons
+  lanfix       engine_*.so: accept internet clients with sv_lan 1
+  hidecmds     engine_*.so: clients can't run status / ping
+  logonmsg     engine_*.so: mute "Could not establish connection to Steam servers."
+  staticprop   engine_*.so: mute "SOLID_VPHYSICS static prop with no vphysics model!"
+  botbuyzone   server_i486.so: mute "bot spawned outside of a buy zone"
 
-  bufferfix    engine_{amd,i486,i686}.so, cstrike/bin/server_i486.so
-               Retarget every `memcpy` relocation to `memmove` and zero the
-               `memcpy` .dynsym/.gnu.version entry (bruno_args' srcds_patch).
-               Overlapping memcpy on modern glibc -> hangs, `Unknown command ":"`.
+Patches are idempotent; originals are kept as *.orig.
 
-  steamclient  bin/steamclient_i486.so
-               Mute the three `Assertion Failed: !"Implement me!"` call sites.
-
-  steamdeny    engine_*.so (from GoDtm666's status/ping protect engines)
-               CSteam3::OnGSClientDenyHelper ignores NoLicense,
-               SteamConnectionLost, SteamConnectionError and
-               SteamValidationStalled instead of kicking the client.
-
-  lanfix       engine_*.so (same source)
-               CBaseServer::ConnectClient no longer rejects non-LAN clients with
-               "LAN servers are restricted to local clients (class C)" when
-               sv_lan is 1.
-
-  hidecmds     engine_*.so
-               Drop `status` and `ping` from the engine's list of commands a
-               client may run (s_clcommands). Server console / rcon keep them;
-               a client's `status` goes to the game DLL like any other command.
-               (GoDtm666's engines renamed the list entries to ghor/dbause.)
-
-  logonmsg     engine_*.so
-               CSteam3::OnLogonFailure: mute "Could not establish connection to
-               Steam servers." (printed with sv_lan 0).
-
-  staticprop   engine_*.so
-               CStaticProp::InsertPropIntoKDTree: mute "SOLID_VPHYSICS static
-               prop with no vphysics model! (...)".
-
-  botbuyzone   cstrike/bin/server_i486.so
-               BuyState::OnUpdate: mute "<team> bot spawned outside of a buy
-               zone (x, y, z)"; the bot still skips buying.
-
-Every patch checks the original bytes before writing and recognises its own
-result, so a second run reports "already". Stock files are kept as `*.orig`.
-
-Usage:
-  python3 patches/srcds_patch.py SERVER_DIR [--only bufferfix,steamdeny]
+Usage: python3 patches/srcds_patch.py SERVER_DIR [--only bufferfix,steamdeny]
 """
 from __future__ import annotations
 
@@ -244,8 +213,7 @@ def patch_steamdeny(elf: Elf) -> str:
     if j < 0 or j > 0x20:
         raise PatchError("jump table not found")
     table = elf.off(_u32(body, j + 3))
-    # Plain return of the function: first `ret`, together with the stack
-    # cleanup in front of it when the function has a frame.
+    # first `ret`, with the `add esp, 0Ch` in front of it if any
     r = body.find(b"\xc3", j)
     if r < 0:
         raise PatchError("return not found")
@@ -291,11 +259,8 @@ def patch_lanfix(elf: Elf) -> str:
 
 # ---- hidecmds ----------------------------------------------------------------
 
-# Engine commands a client may run (CGameClient::ExecuteStringCommand runs a
-# client string through Cmd_ExecuteString only if its first word is in the
-# NULL-terminated `s_clcommands` list; anything else goes to the game DLL).
-# GoDtm666's engines rename these entries (status -> dbause/debuus,
-# ping -> ghor/enrs), which leaves status/ping open under the new names.
+# Removed from s_clcommands, the engine's whitelist of client commands
+# (plus GoDtm666's renamed entries).
 HIDDEN_CLCOMMANDS = ("status", "ping", "dbause", "debuus", "ghor", "enrs")
 
 
@@ -303,7 +268,6 @@ def patch_hidecmds(elf: Elf) -> str:
     data = elf.data
     va = elf.need_symbol("s_clcommands")
     base = elf.off(va)
-    # slot vaddr -> file offset of its R_386_RELATIVE relocation
     relocs = {r_off: ro for ro, r_off, r_info in elf.rel_entries() if r_info == 8}
     names = []
     while (p := _u32(data, base + len(names) * 4)) != 0:
@@ -315,9 +279,7 @@ def patch_hidecmds(elf: Elf) -> str:
         return "already"
     if not keep:
         raise PatchError("nothing left in s_clcommands")
-    # Pack the remaining entries to the front, end the list early. A slot
-    # turned into the terminator must lose its relocation, or the loader
-    # would add the load base to the 0.
+    # new NULL slots lose their R_386_RELATIVE, or the loader adds the base
     for i, (p, _) in enumerate(keep):
         struct.pack_into("<I", data, base + i * 4, p)
     for i in range(len(keep), len(names)):
@@ -333,11 +295,8 @@ def patch_hidecmds(elf: Elf) -> str:
 # ---- logonmsg / staticprop / botbuyzone (console noise) ----------------------
 
 def _str_call(elf: Elf, symbol: str, size: int, text: bytes):
-    """The one `<pass text as 1st arg>; call rel32` in the function.
-
-    The arg is `mov dword ptr [esp], imm32` in i486/i686 builds and
-    `push imm32` in amd. Returns (file offset of that insn, offset after the
-    call and after an `add esp, imm8` stack cleanup if there is one)."""
+    """(offset of `mov [esp], text` / `push text`, offset after the call
+    and its `add esp, N`)."""
     data = elf.data
     f = elf.off(elf.need_symbol(symbol))
     imm = struct.pack("<I", elf.string_vaddr(text))
@@ -359,8 +318,7 @@ def _str_call(elf: Elf, symbol: str, size: int, text: bytes):
 
 
 def patch_logonmsg(elf: Elf) -> str:
-    # CSteam3::OnLogonFailure: `if (!sv_lan) Msg("Could not establish ...")`.
-    # The jne over the Msg becomes jmp; the state flags are still set.
+    # CSteam3::OnLogonFailure: jne over Msg() -> jmp
     data = elf.data
     ref, after = _str_call(elf, "_ZN7CSteam314OnLogonFailureEP14LogonFailure_t", 0x80,
                            b"Could not establish connection to Steam servers.\n")
@@ -376,18 +334,12 @@ def patch_logonmsg(elf: Elf) -> str:
 
 
 def patch_staticprop(elf: Elf) -> str:
-    # CStaticProp::InsertPropIntoKDTree, model without a vphysics collide:
-    #   pCollide = CM_VCollideForModel(-1, model);
-    #   if (!pCollide || !pCollide->solidCount) {
-    #       Q_strncpy(buf, ...); Warning("SOLID_VPHYSICS static prop ...");   <- skipped
-    #       m_nSolidType = SOLID_NONE; return; }
-    # A short jmp at the start of that block lands right after Warning()
-    # (and its stack cleanup in amd), so the stack stays balanced.
+    # CStaticProp::InsertPropIntoKDTree: jmp over Q_strncpy + Warning()
     data = elf.data
     sym = "_ZN11CStaticProp20InsertPropIntoKDTreeEv"
     ref, after = _str_call(elf, sym, 0x400,
                            b"SOLID_VPHYSICS static prop with no vphysics model! (%s)\n")
-    # je <block> ; test word ptr [eax], 0x7fff (solidCount)
+    # je <block>; test word ptr [eax], 7FFFh
     k = data.find(b"\x66\xf7\x00\xff\x7f", ref - 0x40, ref)
     if k < 0 or data[k - 2] != 0x74:
         raise PatchError("vcollide check not found")
@@ -402,19 +354,14 @@ def patch_staticprop(elf: Elf) -> str:
 
 
 def patch_botbuyzone(elf: Elf) -> str:
-    # BuyState::OnUpdate, bot outside a buy zone:
-    #   m_doneBuying = true;
-    #   if (EFL_DIRTY_ABSTRANSFORM) CalcAbsolutePosition();    <- jne here
-    #   CONSOLE_ECHO("%s bot spawned outside of a buy zone (%d, %d, %d)\n", ...);
-    #   return;
-    # The jne becomes a jmp to that `return`.
+    # BuyState::OnUpdate: jne before CONSOLE_ECHO() -> jmp to its return
     data = elf.data
     m, after = _str_call(elf, "_ZN8BuyState8OnUpdateEP6CCSBot", 0x1000,
                          b"%s bot spawned outside of a buy zone (%d, %d, %d)\n")
     if data[after] != 0xE9:
         raise PatchError("return after CONSOLE_ECHO not found")
     exit_off = after + 5 + struct.unpack_from("<i", data, after + 1)[0]
-    # mov byte ptr [ebp+0x14], 1 ; jne/jmp rel32
+    # mov byte ptr [ebp+14h], 1; jne rel32
     i = data.rfind(b"\xc6\x45\x14\x01", m - 0x80, m)
     if i < 0:
         raise PatchError("m_doneBuying store not found")

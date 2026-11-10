@@ -1,10 +1,5 @@
 #!/usr/bin/env bash
-# CS:S v34 base installer (Linux).
-#
-#   ./install.sh                      interactive menu (when run from a terminal)
-#   ./install.sh -y --dir /srv/css34  defaults: our SM line, all patches, SMAC
-#
-# Run ./install.sh --help for every option.
+# CS:S v34 base installer (Linux). ./install.sh --help
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -118,8 +113,7 @@ print(v if not isinstance(v, bool) else str(v).lower())
 PY
 }
 
-# manifest_releases LINE -> "tag sm mm mm_legacy" lines in order of preference
-# (mm_legacy is "-" when the release has no legacy Metamod build)
+# manifest_releases LINE -> "tag sm mm mm_legacy" lines
 manifest_releases() {
   python3 -I - "${MANIFEST}" "$1" <<'PY'
 import json, sys
@@ -129,8 +123,7 @@ for r in (line or {}).get("releases", []):
 PY
 }
 
-# manifest_hotfixes LINE -> "path sha256 url" lines: files the line's packages lack,
-# laid over cstrike/ after them (sourcemod-css34 hotfixes/<line>/)
+# manifest_hotfixes LINE -> "path sha256 url" lines
 manifest_hotfixes() {
   python3 -I - "${MANIFEST}" "$1" <<'PY'
 import json, sys
@@ -300,10 +293,7 @@ sums_get() {
   [[ -s "$1" ]] && awk -v n="$2" '{ f = $2; sub(/^\*/, "", f) } f == n { print $1; found = 1 } END { if (!found) print "-" }' "$1" || echo -
 }
 
-# Our packages, line pointer: releases/download/line-<line>/ always serves the
-# latest smoke-tested build of the line under fixed names. lines.json names the
-# source tag (cache key); SHA256SUMS also catches a pointer switching mid-download.
-# Prints "mm.tar.gz sm.tar.gz" (cached paths).
+# Our packages from the line-<line> pointer. Prints "mm.tar.gz sm.tar.gz".
 fetch_ours_pointer() {
   local ptr tmp tag sums mm sm mm_asset=mmsource-css34-linux.tar.gz mm_key=mmsource_url
   if [[ "${METAMOD}" == legacy ]]; then
@@ -365,8 +355,7 @@ fetch_ours_pinned() {
   return 1
 }
 
-# Our Metamod packages describe themselves in css34-package.json; --metamod
-# legacy must get a metamod.1.ep1 build. Prints the version for the log.
+# --metamod legacy needs a metamod.1.ep1 build. Prints the version.
 check_ours_metamod() {
   [[ -f "$1" ]] || { warn "Metamod package has no css34-package.json"; return 0; }   # older tags
   local got
@@ -383,8 +372,7 @@ PY
   echo "    ${got}"
 }
 
-# Hotfixes of our line: SourceMod gamedata overrides (gamedata/<name>.games/custom/*.txt,
-# read after the shipped files) for a frozen line whose packages stay as published.
+# Hotfix files of the line, laid over the packages.
 install_ours_hotfixes() {
   local cs="${DIR}/cstrike" path sha url cached
   while read -r path sha url; do
@@ -514,8 +502,7 @@ install_protectcmds() {
   local sm="${DIR}/cstrike/addons/sourcemod" src="${ROOT}/extras/protectcmds"
   [[ -d "${sm}" ]] || { warn "ProtectCMDS needs SourceMod; skipped"; return 0; }
   log "ProtectCMDS"
-  # SourceMod 1.13 only loads extension API >= 9, 1.11/1.12 only <= 8. Our packages
-  # say what they accept in css34-package.json; others: guess from the version string.
+  # SM 1.13 loads extension API >= 9, 1.11/1.12 <= 8
   local api=api7 url range lo hi
   if [[ -f "${sm}/css34-package.json" ]]; then
     range="$(python3 -I -c 'import json,sys; m=json.load(open(sys.argv[1])); print(m.get("extension_api_min", 1), m["extension_api"])' "${sm}/css34-package.json")"
@@ -601,9 +588,7 @@ EOF
 
 smoke() {
   log "Smoke test"
-  # Our Metamod packages say what `meta version` must print: the product version
-  # (1.12.0-dev) and the commit it was built from (first 7 hex digits). The
-  # "+<rev>" build number is not checked: archived MM 2.0 builds print +1.
+  # `meta version` must show the package's version and commit
   local meta=() m pkg="${DIR}/cstrike/addons/metamod/css34-package.json"
   if [[ "${SM_SOURCE}" == ours && -f "${pkg}" ]]; then
     while read -r m; do meta+=(--expect-meta "${m}"); done < <(python3 -I -c \

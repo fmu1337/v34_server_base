@@ -1,11 +1,6 @@
 #!/usr/bin/env bash
-# Build protectcmds.ext.so (fmu1337/ProtectCMDS, fork of WeSTManCoder/ProtectCMDS; css34) for SourceMod.
-# Run inside debian:11 (old glibc, so the result loads on Debian 11+/Ubuntu 20.04+):
+# Build protectcmds-api7/api9.ext.so (SM 1.11-1.12 / 1.13):
 #   docker run --rm -v "$PWD:/w" -w /w debian:11 extras/protectcmds/build.sh OUT_DIR
-#
-# Two binaries, because SourceMod changed the extension API in between:
-#   protectcmds-api7.ext.so  SM 1.6 SDK   -> SourceMod 1.11 / 1.12 (accept API <= 8)
-#   protectcmds-api9.ext.so  SM 1.13.0.7394 SDK -> SourceMod 1.13 (7394 loads only 9, 7472 loads 9..11)
 set -euo pipefail
 
 OUT="$(mkdir -p "${1:-out}" && cd "${1:-out}" && pwd)"
@@ -35,12 +30,10 @@ build() { # name smsdk
   local name="$1" smsdk="$2" src="${WORK}/build-$1"
   cp -a "${WORK}/pcmds" "${src}"
   cd "${src}"
-  # Newer gcc: SDK headers use `register` and trip -Werror; C++14 (C++17 makes
-  # the SDK's clamp() ambiguous with std::clamp).
+  # SDK headers: `register` vs -Werror, clamp() vs std::clamp in C++17
   sed -i 's/ -Werror / /; s/^CPPFLAGS += -Wno-non-virtual-dtor/CPPFLAGS += -std=gnu++14 -Wno-non-virtual-dtor/' Makefile
   if [[ "${name}" == api9 ]]; then
-    # SM 1.13 layout: SourcePawn and AMTL headers moved; take its smsdk_ext and
-    # keep eiface.h, which the old one pulled in for css34.
+    # SM 1.13 header layout; keep eiface.h for css34
     printf '\nINCLUDE += -I$(SMSDK)/sourcepawn/include -I$(SMSDK)/public/amtl -I$(SMSDK)/public/amtl/amtl\n' >>Makefile
     cp "${smsdk}/public/smsdk_ext.cpp" "${smsdk}/public/smsdk_ext.h" sdk/
     sed -i 's|^#if !defined METAMOD_PLAPI_VERSION|#ifdef ENGINE_CSS34\n#include <eiface.h>\n#endif\n\n&|' sdk/smsdk_ext.h
