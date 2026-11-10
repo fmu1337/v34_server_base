@@ -270,12 +270,23 @@ def patch_hidecmds(elf: Elf) -> str:
     data = elf.data
     va = elf.need_symbol("s_clcommands")
     base = elf.off(va)
-    relocs = {r_off: ro for ro, r_off, r_info in elf.rel_entries() if r_info == 8}
+    relocs = {r_off: (ro, r_info) for ro, r_off, r_info in elf.rel_entries()}
     names = []
     while (p := _u32(data, base + len(names) * 4)) != 0:
         names.append((p, _cstr(data, elf.off(p))))
         if len(names) > 32:
             raise PatchError("s_clcommands is not NULL-terminated")
+    # Undo an older version of this patch: NULL slots with R_386_NONE. glibc
+    # applies the first DT_RELCOUNT relocations as RELATIVE whatever the type,
+    # so those slots held the load base instead of NULL.
+    fixed = 0
+    while names and relocs.get(va + (len(names) + fixed) * 4, (0, 8))[1] == R_386_NONE:
+        ro = relocs[va + (len(names) + fixed) * 4][0]
+        struct.pack_into("<I", data, base + (len(names) + fixed) * 4, names[-1][0])
+        struct.pack_into("<I", data, ro + 4, 8)
+        fixed += 1
+    if fixed:
+        return f"repaired {fixed} slot(s) left by an older hidecmds"
     restored = []
     for k, (p, n) in enumerate(names):
         if n in RENAMED_CLCOMMANDS:
@@ -289,15 +300,10 @@ def patch_hidecmds(elf: Elf) -> str:
         return "already"
     if not keep:
         raise PatchError("nothing left in s_clcommands")
-    # new NULL slots lose their R_386_RELATIVE, or the loader adds the base
-    for i, (p, _) in enumerate(keep):
-        struct.pack_into("<I", data, base + i * 4, p)
-    for i in range(len(keep), len(names)):
-        ro = relocs.get(va + i * 4)
-        if ro is None:
-            raise PatchError(f"no relocation for s_clcommands[{i}]")
-        struct.pack_into("<I", data, base + i * 4, 0)
-        struct.pack_into("<I", data, ro + 4, R_386_NONE)
+    # The list can't be shortened (a NULL slot would still get the load base
+    # added), so freed slots repeat the last kept entry.
+    for i in range(len(names)):
+        struct.pack_into("<I", data, base + i * 4, keep[min(i, len(keep) - 1)][0])
     hidden = [n for _, n in names if n in HIDDEN_CLCOMMANDS]
     res = "client can't run: " + ", ".join(hidden)
     return res + (" (renamed back: " + ", ".join(restored) + ")" if restored else "")
