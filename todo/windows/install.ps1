@@ -4,7 +4,8 @@
 
 .DESCRIPTION
   Same options as install.sh where they apply on Windows. The binary patches
-  (bufferfix, steamclient, steamdeny, lanfix) are Linux-only.
+  (bufferfix, steamclient, steamdeny, lanfix, hidecmds, logonmsg, staticprop,
+  botbuyzone) are Linux-only.
 
 .EXAMPLE
   powershell -ExecutionPolicy Bypass -File install.ps1 -Dir C:\css34
@@ -99,7 +100,7 @@ if ($SM -ne 'ours') { $SMLine = '' }
 $PatchList = Split-List $Patch
 $PluginList = Split-List $Plugins
 foreach ($p in $PatchList) {
-  if ($p -in 'bufferfix', 'steamclient', 'steamdeny', 'lanfix') { Warn "$p is a Linux-only patch; skipped on Windows" }
+  if ($p -in 'bufferfix', 'steamclient', 'steamdeny', 'lanfix', 'hidecmds', 'logonmsg', 'staticprop', 'botbuyzone') { Warn "$p is a Linux-only patch; skipped on Windows" }
   else { Die "unknown patch: $p" }
 }
 foreach ($p in $PluginList) {

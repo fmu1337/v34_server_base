@@ -11,6 +11,10 @@
 | `steamclient` | да | `bin/steamclient_i486.so` | глушит `Assertion Failed: !"Implement me!"` |
 | `steamdeny` | нет | `engine_*.so` | не кикать по Steam-отказам (из патча GoDtm666) |
 | `lanfix` | нет | `engine_*.so` | пускать интернет-клиентов при `sv_lan 1` (оттуда же) |
+| `hidecmds` | нет | `engine_*.so` | клиент не может выполнить `status` / `ping` (консоль и rcon — могут) |
+| `logonmsg` | нет | `engine_*.so` | глушит `Could not establish connection to Steam servers.` |
+| `staticprop` | нет | `engine_*.so` | глушит `SOLID_VPHYSICS static prop with no vphysics model!` |
+| `botbuyzone` | нет | `cstrike/bin/server_i486.so` | глушит `<team> bot spawned outside of a buy zone` |
 | `--valve-rc` | `auto` | `cstrike/cfg/valve.rc` | замена файла (`configs/`) |
 
 Windows пока отложен — см. [TODO.md](TODO.md).
@@ -41,16 +45,18 @@ Windows пока отложен — см. [TODO.md](TODO.md).
 |--------|-------|
 | `CSteam3::OnGSClientDenyHelper`: 4 записи таблицы переходов → выход из функции | `steamdeny` |
 | `CBaseServer::ConnectClient`: отказ «LAN servers are restricted…» отключён | `lanfix` |
-| строки команд `ping` → `ghor`/`enrs`, `status` → `dbause`/`debuus` | не перенесено (ProtectCMDS) |
+| строки команд `ping` → `ghor`/`enrs`, `status` → `dbause`/`debuus` | `hidecmds` (иначе) |
 
 `srcds_patch.py --only steamdeny,lanfix` на стоковых Linux-engine даёт байт в байт файлы из
 архивов, кроме переименования команд. Оба патча — только Linux, по умолчанию выключены.
 Windows-эквивалент (`engine.dll`) описан в [TODO.md](TODO.md).
 
-Переименование команд не нужно: клиентские `status`/`ping` перехватывает ProtectCMDS
-([PROTECTCMDS.md](PROTECTCMDS.md)), а `status` из консоли сервера / rcon / HLSW продолжает
-работать. `RegConsoleCmd("status")` в SourceMod клиентскую команду **не** ловит: движок
-выполняет `status`/`ping` сам, до `ClientCommand` игры.
+Переименование там — это правка не самих команд, а строк в белом списке `s_clcommands` (см.
+`hidecmds` ниже): консоль/rcon по-прежнему знают `status`/`ping`, а клиент, набравший `dbause`
+или `ghor`, получает обычный вывод `status`/`ping`. `hidecmds` вместо этого убирает записи из
+списка совсем. Без патча клиентские `status`/`ping` перехватывает ProtectCMDS
+([PROTECTCMDS.md](PROTECTCMDS.md)); `RegConsoleCmd("status")` в SourceMod без патча клиентскую
+команду **не** ловит: движок выполняет `status`/`ping` сам, до `ClientCommand` игры.
 
 ### steamdeny — `CSteam3::OnGSClientDenyHelper(CBaseClient*, EDenyReason, const char*)`
 
@@ -146,6 +152,95 @@ ProtectCMDS это не заменяет: его детур `ConnectClient` то
 
 Рекомендация: `steamdeny` — для `sv_lan 0`; `lanfix` — только если сервер сознательно в
 `sv_lan 1`, и тогда обязательно проверить SteamID с eSTEAMATiON.
+
+## hidecmds — `status` / `ping` только для консоли
+
+Строка команды от клиента попадает в `CGameClient::ExecuteStringCommand`. Он берёт первое слово
+и ищет его в `s_clcommands` — NULL-терминированном массиве указателей на строки:
+
+```
+status, pause, setpause, unpause, ping, NULL
+```
+
+Нашлось — `Cmd_ExecuteString(s, src_client)`, команду выполняет движок (`Host_Status_f` /
+`Host_Ping_f` в ветке `cmd_source == src_client` печатают ответ клиенту). Не нашлось — строка
+идёт в `g_pServerPluginHandler->ClientCommand` → `ClientCommand` игры, как любая игровая
+команда.
+
+Патч сдвигает оставшиеся записи к началу массива и заканчивает его раньше:
+
+```
+pause, setpause, unpause, NULL, NULL
+```
+
+Каждый слот массива — релокация `R_386_RELATIVE` (загрузчик прибавляет к значению базу
+библиотеки). У слотов, ставших `NULL`, релокация переписывается в `R_386_NONE`, иначе к нулю
+прибавилась бы база и список не закончился бы. Код движка не меняется.
+
+Что получается:
+
+- клиентский `status` / `ping` до движка не доходит: без плагинов игра ответит «Unknown
+  command», а SourceMod может повесить на них `RegConsoleCmd` / `AddCommandListener`;
+- консоль сервера, `rcon status`, HLSW, `lib/smoke.py` — без изменений (`src_command`, список
+  не проверяется);
+- `pause` / `setpause` / `unpause` остаются клиентскими, как в стоке;
+- на engine от GoDtm666 убираются и переименованные записи (`dbause`, `debuus`, `ghor`, `enrs`).
+
+Отличие от переименования: в GoDtm666 `status` у клиента работает под другим именем (и
+перестаёт работать при утечке имени), здесь — не работает вообще. Отличие от ProtectCMDS:
+ProtectCMDS решает по каждому клиенту и может отдать `sm_status`; `hidecmds` закрывает команду
+на уровне движка, даже если плагины не загрузились. Вместе не мешают.
+
+Как сделано (`patch_hidecmds`): массив по символу `s_clcommands`, релокации — из `.rel.dyn`.
+Если в списке нет ни одного имени из `HIDDEN_CLCOMMANDS` — `already`.
+
+## logonmsg, staticprop, botbuyzone — шум в консоли
+
+Перенесены из пропатченных engine/server в сборке с eSTEAMATiON RC8 (`engine_i486.so` после
+patchelf, `server_i486.so`). На стоковых файлах патч даёт те же байты, кроме мёртвых байтов
+после перехода. Поведение сервера не меняют — только убирают сообщения.
+
+### logonmsg — `CSteam3::OnLogonFailure`
+
+```
+if (this->[0xf6] && !this->[0xf3]) {
+    if (pLogonFailure->eResult == 20 /* ServiceUnavailable */) {
+        if (!sv_lan) Msg("Connection to Steam servers successful (SU).\n");
+    } else if (!sv_lan)
+        Msg("Could not establish connection to Steam servers.\n");      <- jne → jmp
+    this->[0xf3] = 1; this->[0xf1] = 1;
+}
+```
+
+`jne` через первый `Msg` → `jmp`. Флаги ставятся как раньше (поля по смещениям, имена не
+восстановлены): обработка неудачного входа та же, пропадает только сообщение. Сервер v34 к Steam никогда не подключится (CSER мёртв), так что сообщение —
+просто шум на каждом старте.
+
+### staticprop — `CStaticProp::InsertPropIntoKDTree`
+
+Статический проп с `SOLID_VPHYSICS`, у модели которого нет коллизии: движок пишет
+`SOLID_VPHYSICS static prop with no vphysics model! (<модель>)`, ставит пропу `SOLID_NONE` и
+выходит. Короткий `jmp` в начале блока перепрыгивает `Q_strncpy` + `Warning` на
+`m_nSolidType = SOLID_NONE`. На кастомных картах таких сообщений бывают сотни.
+
+В amd-сборке аргументы передаются `push`-ами, поэтому переход ведёт на инструкцию после
+`add esp, 10h` — стек сбалансирован.
+
+### botbuyzone — `BuyState::OnUpdate` (server_i486.so)
+
+Бот заспавнился вне зоны закупки:
+
+```
+m_doneBuying = true;
+if (IsEFlagSet(EFL_DIRTY_ABSTRANSFORM)) CalcAbsolutePosition();   <- jne
+CONSOLE_ECHO("%s bot spawned outside of a buy zone (%d, %d, %d)\n", team, x, y, z);
+return;
+```
+
+`jne rel32` → `jmp` на `return` (тот же, что после `CONSOLE_ECHO`) + `nop`. Бот так же не
+покупает; не выводится только сообщение (и не пересчитывается позиция, нужная только для него).
+Сообщение появляется на картах без buy-зон (aim_, awp_, fy_, deathmatch) на каждом респавне
+каждого бота.
 
 ## valve.rc
 

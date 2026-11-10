@@ -30,7 +30,7 @@ HOSTNAME_CFG="CS:S v34 server"
 RCON_PASSWORD=""
 FORCE=0
 
-ALL_PATCHES="bufferfix steamclient steamdeny lanfix"
+ALL_PATCHES="bufferfix steamclient steamdeny lanfix hidecmds logonmsg staticprop botbuyzone"
 ALL_PLUGINS="smac protectcmds"
 
 usage() {
@@ -54,6 +54,10 @@ default: bufferfix,steamclient):
   steamdeny     engine: don't kick on Steam deny NoLicense / ConnectionLost /
                 ConnectionError / ValidationStalled (GoDtm666)
   lanfix        engine: accept internet clients with sv_lan 1 (GoDtm666)
+  hidecmds      engine: clients can't run status / ping (console, rcon keep them)
+  logonmsg      engine: mute 'Could not establish connection to Steam servers.'
+  staticprop    engine: mute 'SOLID_VPHYSICS static prop with no vphysics model!'
+  botbuyzone    server_i486.so: mute 'bot spawned outside of a buy zone'
   --valve-rc V          auto | stock | debian9 | minimal
                         auto = debian9 with bufferfix, minimal without
 
@@ -632,7 +636,7 @@ interactive() {
       METAMOD="$(ask "Metamod: default (MM 1.12 + DHooks) | legacy (MM 1.10.7, 1.ep1 core)" "${METAMOD}")"
     fi
   fi
-  PATCHES="$(ask "Patches (bufferfix,steamclient,steamdeny,lanfix | all | none)" "${PATCHES}")"
+  PATCHES="$(ask "Patches (bufferfix,steamclient,steamdeny,lanfix,hidecmds,logonmsg,staticprop,botbuyzone | all | none)" "${PATCHES}")"
   VALVE_RC="$(ask "valve.rc: auto | stock | debian9 | minimal" "${VALVE_RC}")"
   PLUGINS="$(ask "Plugins (smac,protectcmds | none)" "${PLUGINS}")"
   [[ "$(ask "Run smoke test after install? (y/n)" n)" == y ]] && SMOKE=1
