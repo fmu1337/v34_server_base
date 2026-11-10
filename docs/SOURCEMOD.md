@@ -69,6 +69,6 @@ workflow `protectcmds`) и лежит в релизе
 [`protectcmds-bbdc766`](https://github.com/fmu1337/v34_server_base/releases/tag/protectcmds-bbdc766)
 в двух вариантах: API 7 (SM 1.11/1.12) и API 9 (SM 1.13). Нужный выбирается по
 `css34-package.json` нашего пакета SM, для rom4s/myarena — по версии SM. Ставится с
-`protectcmds.ini` (апдейтер выключен, `osfix` выключен при `bufferfix`), `blockcmds.txt` и
-плагином `protectcmds_status.smx`: клиентские `status`/`ping` уходят в защищённые `sm_status`/
-`sm_ping` из SMAC. Подробно — [docs/PROTECTCMDS.md](PROTECTCMDS.md).
+`protectcmds.ini` (апдейтер выключен, `osfix` выключен при `bufferfix`), `blockcmds.txt`;
+клиентские `status`/`ping` — плагин `status_ping.smx` (см. PROTECTCMDS.md, «status / ping»).
+Подробно — [docs/PROTECTCMDS.md](PROTECTCMDS.md).

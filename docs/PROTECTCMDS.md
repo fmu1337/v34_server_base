@@ -14,10 +14,7 @@ SM-расширение `protectcmds.ext.so` (WeSTManCoder, наш форк
   и свой список `data/protectcmds/blockcmds.txt` (`[args]`, `[sensitive]`);
 - forward `ProtectCMDS_OnClientCommand(int client, const char[] command)`.
 
-Плагин `protectcmds_status.smx` (`extras/protectcmds/protectcmds_status.sp`) через этот forward
-отправляет клиентские `status`/`ping` в `sm_status`/`sm_ping` из `smac_status` (антиспам,
-показ только себя/админам); движковые версии не выполняются. Без SMAC обе команды для игроков
-закрыты. Из консоли сервера и по rcon `status` работает как обычно.
+`status`/`ping` от клиентов решаются не здесь — см. [ниже](#status--ping).
 
 Модули из `protectcmds.ini`:
 
@@ -140,3 +137,23 @@ SourceMod загружает `protectcmds.ext.so` и вызывает экспо
 Собирать загрузчик и обе реализации — в `fmu1337/ProtectCMDS` (или в `extras/protectcmds/`
 здесь), публиковать одним архивом `protectcmds-css34-linux.tar.gz` с деревом `addons/` как выше.
 Установщику остаётся распаковать архив — без выбора по версии SM.
+
+## status / ping
+
+Два слоя, ProtectCMDS для них не нужен:
+
+1. **Движок — патч `hidecmds`** (по умолчанию, [PATCHES.md](PATCHES.md#hidecmds--status--ping-только-для-консоли)):
+   `status`/`ping` убраны из списка команд, которые движок выполняет за клиента. Клиентская
+   команда уходит в `ClientCommand` игры, как любая игровая; консоль и rcon работают как в стоке.
+   Защита не зависит от плагинов: без SourceMod клиент получит «Unknown command».
+2. **SourceMod — плагин `status_ping.smx`** (`extras/status_ping/status_ping.sp`):
+   `RegConsoleCmd("status"/"ping")` отдаёт клиенту `sm_status`/`sm_ping` из SMAC (`smac_status`:
+   антиспам, полный список только админам). Для `client == 0` (консоль, rcon) —
+   `Plugin_Continue`, отвечает движок.
+
+Плагин ставится, если выбран `hidecmds` или ProtectCMDS. Без `hidecmds` движок отвечает
+клиенту раньше, чем `ClientCommand`, и `RegConsoleCmd` его не видит; тогда плагин ловит команду
+через forward `ProtectCMDS_OnClientCommand`. Без `hidecmds` и без ProtectCMDS клиентский
+`status` остаётся открытым.
+
+Прежний `protectcmds_status.smx` установщик удаляет: `status_ping.smx` делает то же и больше.

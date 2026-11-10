@@ -11,7 +11,7 @@
 | `steamclient` | да | `bin/steamclient_i486.so` | глушит `Assertion Failed: !"Implement me!"` |
 | `steamdeny` | нет | `engine_*.so` | не кикать по Steam-отказам (из патча GoDtm666) |
 | `lanfix` | нет | `engine_*.so` | пускать интернет-клиентов при `sv_lan 1` (оттуда же) |
-| `hidecmds` | нет | `engine_*.so` | клиент не может выполнить `status` / `ping` (консоль и rcon — могут) |
+| `hidecmds` | да | `engine_*.so` | клиент не может выполнить `status` / `ping` (консоль и rcon — могут) |
 | `logonmsg` | нет | `engine_*.so` | глушит `Could not establish connection to Steam servers.` |
 | `staticprop` | нет | `engine_*.so` | глушит `SOLID_VPHYSICS static prop with no vphysics model!` |
 | `botbuyzone` | нет | `cstrike/bin/server_i486.so` | глушит `<team> bot spawned outside of a buy zone` |
@@ -197,6 +197,9 @@ pause, setpause, unpause, unpause, unpause, NULL
 вызвать; здесь консоль работает как в стоке, а клиенту команда недоступна. Отличие от ProtectCMDS:
 ProtectCMDS решает по каждому клиенту и может отдать `sm_status`; `hidecmds` закрывает команду
 на уровне движка, даже если плагины не загрузились. Вместе не мешают.
+
+Клиентские `status` / `ping` после патча обрабатывает плагин `status_ping.smx`
+([PROTECTCMDS.md](PROTECTCMDS.md#status--ping)).
 
 Как сделано (`patch_hidecmds`): массив по символу `s_clcommands`, релокации — из `.rel.dyn`.
 Если в списке нет ни одного имени из `HIDDEN_CLCOMMANDS` — `already`.

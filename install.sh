@@ -13,7 +13,7 @@ SM_SOURCE=""             # ours | rom4s | myarena | none   (empty = manifest def
 SM_LINE=""               # ours only (empty = manifest default)
 SM_PINNED=0              # ours: 1 = skip the line pointer, pinned tags only
 METAMOD="default"        # ours: default | legacy (lines with a legacy Metamod build)
-PATCHES="bufferfix,steamclient"
+PATCHES="bufferfix,steamclient,hidecmds"
 VALVE_RC="auto"          # auto | stock | debian9 | minimal
 PLUGINS="smac,protectcmds"
 SMAC_MODE="auto"         # auto | compile | prebuilt
@@ -42,7 +42,7 @@ Server:
   --force               wipe an existing non-empty --dir before installing
 
 Patches (--patch LIST, comma separated, or all / none;
-default: bufferfix,steamclient):
+default: bufferfix,steamclient,hidecmds):
   bufferfix     engine_*.so + server_i486.so: memcpy -> memmove (hangs,
                 'Unknown command ":"', 'Incorrect price blob version!')
   steamclient   steamclient_i486.so: mute 'Assertion Failed: !"Implement me!"'
@@ -73,8 +73,7 @@ SourceMod + Metamod:
 Plugins:
   --plugins LIST        smac,protectcmds | all | none (default: smac,protectcmds)
                         protectcmds: ProtectCMDS extension (fmu1337 fork of WeSTManCoder's)
-                        (client command flood/exploit filter; sends client
-                        status/ping to SMAC's protected versions)
+                        (client command flood/exploit filter)
   --smac-mode MODE      auto (compile, fall back to prebuilt) | compile | prebuilt
 
 Other:
@@ -526,11 +525,23 @@ install_protectcmds() {
     # same memcpy fix is already in the binaries
     sed -i 's/^osfix_enable *= *1/osfix_enable = 0/' "${sm}/data/protectcmds/protectcmds.ini"
   fi
-  if "${sm}/scripting/spcomp" "${src}/protectcmds_status.sp" -o"${sm}/plugins/protectcmds_status.smx" \
-       -i"${sm}/scripting/include" >"${CACHE_DIR}/protectcmds-compile.log" 2>&1; then
-    echo "    status/ping -> sm_status/sm_ping (protectcmds_status.smx)"
+}
+
+# Client status/ping -> SMAC's sm_status/sm_ping (with hidecmds or ProtectCMDS).
+want_status_ping() {
+  [[ -d "${DIR}/cstrike/addons/sourcemod" ]] \
+    && { has_item "${PATCHES}" hidecmds || has_item "${PLUGINS}" protectcmds; }
+}
+
+install_status_ping() {
+  local sm="${DIR}/cstrike/addons/sourcemod"
+  log "status/ping plugin"
+  rm -f "${sm}/plugins/protectcmds_status.smx"   # replaced by status_ping.smx
+  if "${sm}/scripting/spcomp" "${ROOT}/extras/status_ping/status_ping.sp" -o"${sm}/plugins/status_ping.smx" \
+       -i"${sm}/scripting/include" >"${CACHE_DIR}/status_ping-compile.log" 2>&1; then
+    echo "    client status/ping -> sm_status/sm_ping (status_ping.smx)"
   else
-    warn "protectcmds_status.sp did not compile (log: ${CACHE_DIR}/protectcmds-compile.log)"
+    warn "status_ping.sp did not compile (log: ${CACHE_DIR}/status_ping-compile.log)"
   fi
 }
 
@@ -604,7 +615,8 @@ smoke() {
   python3 -I "${ROOT}/lib/smoke.py" "${DIR}" \
     --sm "${SM_SOURCE}" ${meta[@]+"${meta[@]}"} ${hotfix[@]+"${hotfix[@]}"} \
     $(has_item "${PLUGINS}" smac && echo --expect-plugin smac) \
-    $(has_item "${PLUGINS}" protectcmds && echo --expect-ext ProtectCMDS --expect-plugin ProtectCMDS:status/ping)
+    $(has_item "${PLUGINS}" protectcmds && echo --expect-ext ProtectCMDS) \
+    $(want_status_ping && echo --expect-plugin status/ping)
 }
 
 interactive() {
@@ -699,6 +711,7 @@ install_valve_rc
 install_sourcemod
 has_item "${PLUGINS}" smac && install_smac
 has_item "${PLUGINS}" protectcmds && install_protectcmds
+want_status_ping && install_status_ping
 write_configs
 write_state
 

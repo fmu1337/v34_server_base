@@ -27,7 +27,7 @@ sudo ./install.sh --deps-only        # 32-bit библиотеки, один р�
 | Шаг | По умолчанию | Опции |
 |-----|--------------|-------|
 | Файлы сервера | релиз [`server-css34-4044`](https://github.com/fmu1337/v34_server_base/releases/tag/server-css34-4044) (копия rom4s) | `--server-source auto\|mirror\|rom4s\|skip` |
-| Патчи | `bufferfix,steamclient` | `--patch LIST\|all\|none` — [docs/PATCHES.md](docs/PATCHES.md) |
+| Патчи | `bufferfix,steamclient,hidecmds` | `--patch LIST\|all\|none` — [docs/PATCHES.md](docs/PATCHES.md) |
 | Metamod + SourceMod | [`sourcemod-css34`](https://github.com/fmu1337/sourcemod-css34), `sm13-latest` | `--sm ours\|rom4s\|myarena\|none`, `--sm-line …` — [docs/SOURCEMOD.md](docs/SOURCEMOD.md) |
 | Плагины | [SMAC](https://github.com/fmu1337/smac_v34) + [ProtectCMDS](https://github.com/fmu1337/ProtectCMDS) | `--plugins smac,protectcmds\|none` — [docs/PROTECTCMDS.md](docs/PROTECTCMDS.md) |
 

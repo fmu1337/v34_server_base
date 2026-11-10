@@ -34,7 +34,7 @@ STEAMCLIENT_FILE = "bin/steamclient_i486.so"
 
 ALL_PATCHES = ("bufferfix", "steamclient", "steamdeny", "lanfix",
                "hidecmds", "logonmsg", "staticprop", "botbuyzone")
-DEFAULT_PATCHES = ("bufferfix", "steamclient")
+DEFAULT_PATCHES = ("bufferfix", "steamclient", "hidecmds")
 
 
 class PatchError(Exception):
