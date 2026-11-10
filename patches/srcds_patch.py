@@ -259,9 +259,11 @@ def patch_lanfix(elf: Elf) -> str:
 
 # ---- hidecmds ----------------------------------------------------------------
 
-# Removed from s_clcommands, the engine's whitelist of client commands
-# (plus GoDtm666's renamed entries).
-HIDDEN_CLCOMMANDS = ("status", "ping", "dbause", "debuus", "ghor", "enrs")
+# Removed from s_clcommands, the engine's whitelist of client commands.
+HIDDEN_CLCOMMANDS = ("status", "ping")
+# GoDtm666's engines overwrite the name strings, which renames the
+# ConCommands themselves; the names are put back.
+RENAMED_CLCOMMANDS = {"dbause": "status", "debuus": "status", "ghor": "ping", "enrs": "ping"}
 
 
 def patch_hidecmds(elf: Elf) -> str:
@@ -274,6 +276,14 @@ def patch_hidecmds(elf: Elf) -> str:
         names.append((p, _cstr(data, elf.off(p))))
         if len(names) > 32:
             raise PatchError("s_clcommands is not NULL-terminated")
+    restored = []
+    for k, (p, n) in enumerate(names):
+        if n in RENAMED_CLCOMMANDS:
+            orig = RENAMED_CLCOMMANDS[n]
+            o = elf.off(p)
+            data[o : o + len(orig)] = orig.encode()
+            names[k] = (p, orig)
+            restored.append(f"{n} -> {orig}")
     keep = [(p, n) for p, n in names if n not in HIDDEN_CLCOMMANDS]
     if len(keep) == len(names):
         return "already"
@@ -289,7 +299,8 @@ def patch_hidecmds(elf: Elf) -> str:
         struct.pack_into("<I", data, base + i * 4, 0)
         struct.pack_into("<I", data, ro + 4, R_386_NONE)
     hidden = [n for _, n in names if n in HIDDEN_CLCOMMANDS]
-    return "client can't run: " + ", ".join(hidden)
+    res = "client can't run: " + ", ".join(hidden)
+    return res + (" (renamed back: " + ", ".join(restored) + ")" if restored else "")
 
 
 # ---- logonmsg / staticprop / botbuyzone (console noise) ----------------------
